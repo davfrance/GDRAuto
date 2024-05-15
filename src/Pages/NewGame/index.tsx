@@ -1,6 +1,6 @@
 import { useFormik } from 'formik';
 import { useEffect, useState } from 'react';
-import { IGame, ITeam } from '../../Types/Game';
+import { IGame } from '../../Types/Game';
 import { Button } from '@material-tailwind/react';
 import Title from '../../Components/Titles/Title';
 import SubTitle from '../../Components/Titles/SubTitle';
@@ -8,7 +8,7 @@ import NewUser from '../../Components/NewUser/NewUser';
 import { DEFAULT_AVATAR } from '../../Constants';
 import NewTeam from '../../Components/NewTeam/NewTeam';
 import { useDispatch } from 'react-redux';
-import { saveGame, saveTeams } from '../../Redux/Slices/Game';
+import { saveGame } from '../../Redux/Slices/Game';
 import { useNavigate } from 'react-router-dom';
 import { gameCreationSchema } from '../../Validation/GameCreationSchema';
 import { uuidv4 } from '../../Utils';
@@ -35,7 +35,7 @@ function NewGame() {
   }, [values]);
 
   useEffect(() => {
-    console.log(errors);
+    console.log('errors', errors);
   }, [errors, values]);
 
   return (

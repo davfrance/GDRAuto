@@ -1,12 +1,16 @@
+import { IClass } from "../Constants/classes";
+
 export type IUser = {
-  id?: string;
-  name?: string;
+  id: string;
+  name: string;
   gender?: string;
   image?: string;
-  health?: number;
-  hunger?: number;
+  hunger: number;
   weapon?: object;
-  thirst?: number;
+  thirst: number;
+  hp: number;
+  class?: IClass;
+  stats:IStats
 };
 export interface ITeam {
   id: string;
@@ -16,4 +20,10 @@ export interface ITeam {
 export interface IGame {
   teams: ITeam[];
   id:string
+}
+export interface IStats{
+  mana: number,
+  attack: number,
+  magic: number,
+  stamina: number,
 }

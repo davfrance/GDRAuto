@@ -1,17 +1,23 @@
 import * as yup from 'yup';
-import { IGame, ITeam, IUser } from '../Types/Game';
+import { IGame, IStats, ITeam } from '../Types/Game';
 
-
-let memberSchema: yup.ObjectSchema<IUser> =  yup.object({
-	id: yup.string().required(),
-	name: yup.string().required(),
-	gender:  yup.string().required(),
-	image:  yup.string().required(),
-	health:  yup.number().required(),
-	hunger:  yup.number().required(),
-	weapon:  yup.object(),
-	thirst:  yup.number()
-  });
+const statsSchema: yup.ObjectSchema<IStats> = yup.object({
+  mana: yup.number().required(),
+  attack: yup.number().required(),
+  magic: yup.number().required(),
+  stamina: yup.number().required(),
+});
+let memberSchema = yup.object({
+  id: yup.string().required(),
+  name: yup.string().required(),
+  gender: yup.string(),
+  image: yup.string(),
+  hp: yup.number().required(),
+  hunger: yup.number().required(),
+  weapon: yup.object(),
+  thirst: yup.number().required(),
+  stats: statsSchema,
+});
 
 let teamSchema: yup.ObjectSchema<ITeam> = yup.object({
   id: yup.string().required(),
