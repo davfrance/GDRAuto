@@ -58,7 +58,7 @@ function NewGame() {
                     key={member.id}
                   >
                     <img
-                      src={member.image || DEFAULT_AVATAR}
+                      src={member.image || member.class?.iconImageUrl || DEFAULT_AVATAR}
                       alt=""
                       className="w-16 aspect-square rounded-full"
                     />

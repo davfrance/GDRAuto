@@ -17,6 +17,7 @@ export interface IClass {
   passiveSkill: string;
   renderName: string;
   imageUrl: string;
+  iconImageUrl: string;
 }
 
 export interface IClasses {
@@ -32,6 +33,7 @@ export interface IClasses {
 export const classes: IClasses = {
   paladin: {
     imageUrl: 'assets/paladin.jpg',
+    iconImageUrl: 'assets/paladinIcon.jpg',
     renderName: 'Paladin',
     stats: {
       hp: 2,
@@ -51,6 +53,7 @@ export const classes: IClasses = {
   bandit: {
     renderName: 'Bandit',
     imageUrl: 'assets/bandit.jpg',
+    iconImageUrl: 'assets/banditIcon.jpg',
     stats: {
       hp: -1,
       mana: -2,
@@ -69,6 +72,7 @@ export const classes: IClasses = {
   witch: {
     renderName: 'Witch',
     imageUrl: 'assets/witch.jpg',
+    iconImageUrl: 'assets/witchIcon.jpg',
     stats: {
       attack: 0,
       hp: 0,
@@ -87,6 +91,7 @@ export const classes: IClasses = {
   highElf: {
     renderName: 'High Elf',
     imageUrl: 'assets/highElf.jpg',
+    iconImageUrl: 'assets/highElfIcon.jpg',
     stats: {
       hp: -2,
       mana: 2,
@@ -105,6 +110,7 @@ export const classes: IClasses = {
   darkElf: {
     renderName: 'Dark Elf',
     imageUrl: 'assets/darkElf.jpg',
+    iconImageUrl: 'assets/darkElfIcon.jpg',
     stats: {
       hp: 0,
       mana: 4,
@@ -122,7 +128,8 @@ export const classes: IClasses = {
   },
   mountainDwarf: {
     renderName: 'Mountain Dwarf',
-    imageUrl: 'assets/montainDwarf.jpg',
+    imageUrl: 'assets/mountainDwarf.jpg',
+    iconImageUrl: 'assets/mountainDwarfIcon.jpg',
     stats: {
       hp: 4,
       mana: -2,
@@ -141,6 +148,7 @@ export const classes: IClasses = {
   hillDwarf: {
     renderName: 'Hill Dwarf',
     imageUrl: 'assets/hillsDwarf.jpg',
+    iconImageUrl: 'assets/hillsDwarfIcon.jpg',
     stats: {
       hp: 1,
       mana: 1,
