@@ -6,6 +6,7 @@ import { uuidv4 } from '../../Utils';
 import { Modal } from '@mui/material';
 import ClassSelectionModal from './ClassSelectionModal';
 import { IClasses, classes } from '../../Constants/classes';
+import { memberSchema } from '../../Validation/GameCreationSchema';
 
 export interface INewUser {
   formik: FormikProps<IGame>;
@@ -35,6 +36,9 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
       weapon: {},
       thirst: 10,
     },
+    validationSchema: memberSchema,
+    validateOnMount: true,
+    validateOnChange: true,
     onSubmit: (values, { resetForm }) => {
       formik.setFieldValue(position, values);
       onClose();
@@ -55,14 +59,14 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
       stamina: Math.floor(Math.random() * 7) + 4,
     };
 
-    const keys = Object.keys(stats);
-    const maxStat = keys.reduce(
+    const statKeys = Object.keys(stats);
+    const maxStat = statKeys.reduce(
       (max, key) =>
         stats[key as keyof IStats] > max ? stats[key as keyof IStats] : max,
       0
     );
     if (maxStat < 10) {
-      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      const randomKey = statKeys[Math.floor(Math.random() * statKeys.length)];
       stats[randomKey as keyof IStats] = 10;
     }
 
@@ -73,7 +77,12 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
       stats.magic += values.class.stats.magic;
       stats.stamina += values.class.stats.stamina;
     }
-
+    
+    statKeys.forEach(key => {
+      if (stats[key as keyof IStats] <= 0) {
+        stats[key as keyof IStats] = 1;
+      }
+    });
     formikNewUser.setFieldValue('stats', stats);
   };
 
@@ -138,7 +147,9 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
               </p>
             </div>
           )}
-          <Button type="submit">Save</Button>
+          <Button disabled={!formikNewUser.isValid} type="submit">
+            Save
+          </Button>
         </div>
         <ClassSelectionModal
           open={openClassSelection}
