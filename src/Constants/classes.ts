@@ -15,7 +15,8 @@ export interface IClass {
   stats: IClassStats;
   weapons: IWeapon;
   passiveSkill: string;
-  renderName:string;
+  renderName: string;
+  imageUrl: string;
 }
 
 export interface IClasses {
@@ -30,6 +31,7 @@ export interface IClasses {
 
 export const classes: IClasses = {
   paladin: {
+    imageUrl: 'assets/paladin.jpg',
     renderName: 'Paladin',
     stats: {
       hp: 2,
@@ -48,6 +50,7 @@ export const classes: IClasses = {
   },
   bandit: {
     renderName: 'Bandit',
+    imageUrl: 'assets/bandit.jpg',
     stats: {
       hp: -1,
       mana: -2,
@@ -65,6 +68,7 @@ export const classes: IClasses = {
   },
   witch: {
     renderName: 'Witch',
+    imageUrl: 'assets/witch.jpg',
     stats: {
       attack: 0,
       hp: 0,
@@ -82,6 +86,7 @@ export const classes: IClasses = {
   },
   highElf: {
     renderName: 'High Elf',
+    imageUrl: 'assets/highElf.jpg',
     stats: {
       hp: -2,
       mana: 2,
@@ -99,6 +104,7 @@ export const classes: IClasses = {
   },
   darkElf: {
     renderName: 'Dark Elf',
+    imageUrl: 'assets/darkElf.jpg',
     stats: {
       hp: 0,
       mana: 4,
@@ -116,6 +122,7 @@ export const classes: IClasses = {
   },
   mountainDwarf: {
     renderName: 'Mountain Dwarf',
+    imageUrl: 'assets/montainDwarf.jpg',
     stats: {
       hp: 4,
       mana: -2,
@@ -133,6 +140,7 @@ export const classes: IClasses = {
   },
   hillDwarf: {
     renderName: 'Hill Dwarf',
+    imageUrl: 'assets/hillsDwarf.jpg',
     stats: {
       hp: 1,
       mana: 1,

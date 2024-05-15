@@ -1,16 +1,30 @@
 /** @type {import('tailwindcss').Config} */
-const withMT = require("@material-tailwind/react/utils/withMT");
+const withMT = require('@material-tailwind/react/utils/withMT');
 
 module.exports = withMT({
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}', ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    screens: {
+      tablet: '640px',
+      // => @media (min-width: 640px) { ... }
+
+      laptop: { max: '1500px' },
+      // => @media (min-width: 1024px) { ... }
+
+      desktop: '1500px',
+      // => @media (min-width: 1280px) { ... }
+    },
     extend: {
+      aspectRatio: {
+        verticalMobile: '9/16',
+      },
+
       colors: {
-        primary:'#C1C1C1',
-        secondary:'#753742',
-        tertiary:'#139A43',
-        background:'#2C4251',
-        myWhite:'#FDECF2',
+        primary: '#C1C1C1',
+        secondary: '#753742',
+        tertiary: '#139A43',
+        background: '#2C4251',
+        myWhite: '#FDECF2',
 
         TK: {
           background: '#131921',
