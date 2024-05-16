@@ -1,12 +1,13 @@
 import { Button, Input } from '@material-tailwind/react';
 import { FormikProps, useFormik } from 'formik';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IGame, IStats, IUser } from '../../Types/Game';
 import { uuidv4 } from '../../Utils';
 import { Modal } from '@mui/material';
 import ClassSelectionModal from './ClassSelectionModal';
 import { IClasses, classes } from '../../Constants/classes';
 import { memberSchema } from '../../Validation/GameCreationSchema';
+import { PRIME_NUMBERS } from '../../Constants';
 
 export interface INewUser {
   formik: FormikProps<IGame>;
@@ -21,11 +22,12 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
   const formikNewUser = useFormik<IUser>({
     initialValues: {
       id: uuidv4(),
+      prime: NaN,
       name: '',
       gender: '',
       class: undefined,
       image: '',
-      hp: 20,
+      hp: 35,
       stats: {
         mana: 0,
         attack: 0,
@@ -47,9 +49,15 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
     },
   });
   const { handleChange, values, handleSubmit } = formikNewUser;
+
   useEffect(() => {
-    console.log('user', position, values);
-  }, [values]);
+    const num = formik.values.teams.reduce((totPlayer, team) => {
+      console.log('dentro loop', totPlayer, team.members.length);
+      return totPlayer + team.members.length;
+    }, 0);
+    formikNewUser.setFieldValue('prime', PRIME_NUMBERS[num]);
+    console.log('erors', formikNewUser.errors);
+  }, [formik.values]);
 
   const generateStats = () => {
     const stats: IStats = {
@@ -69,21 +77,23 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
       const randomKey = statKeys[Math.floor(Math.random() * statKeys.length)];
       stats[randomKey as keyof IStats] = 10;
     }
-
+    let newHP = values.hp;
     // Add class stats to the generated stats
     if (values.class) {
       stats.mana += values.class.stats.mana;
       stats.attack += values.class.stats.attack;
       stats.magic += values.class.stats.magic;
       stats.stamina += values.class.stats.stamina;
+      newHP += values.class.stats.hp
+      statKeys.forEach(key => {
+        if (stats[key as keyof IStats] <= 0) {
+          stats[key as keyof IStats] = 1;
+        }
+      });
+      formikNewUser.setFieldValue('stats', stats);
+      formikNewUser.setFieldValue('hp', newHP);
+      formikNewUser.validateForm();
     }
-    
-    statKeys.forEach(key => {
-      if (stats[key as keyof IStats] <= 0) {
-        stats[key as keyof IStats] = 1;
-      }
-    });
-    formikNewUser.setFieldValue('stats', stats);
   };
 
   const handleClassSelectionModal = (className: keyof IClasses) => {
@@ -130,6 +140,9 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
             <div>
               <p>Class:{values.class.renderName}</p>
               <p>
+                HP: {values.hp} ({values.class ? values.class.stats.hp : 0})
+              </p>
+              <p>
                 Mana: {values.stats.mana} (
                 {values.class ? values.class.stats.mana : 0})
               </p>
@@ -147,7 +160,7 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
               </p>
             </div>
           )}
-          <Button disabled={!formikNewUser.isValid} type="submit">
+          <Button disabled={!formikNewUser.isValid || values.stats.attack == 0} type="submit">
             Save
           </Button>
         </div>

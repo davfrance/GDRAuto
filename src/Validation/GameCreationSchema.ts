@@ -2,10 +2,10 @@ import * as yup from 'yup';
 import { IGame, IStats, ITeam } from '../Types/Game';
 
 const statsSchema: yup.ObjectSchema<IStats> = yup.object({
-  mana: yup.number().min(1).required(),
-  attack: yup.number().min(1).required(),
-  magic: yup.number().min(1).required(),
-  stamina: yup.number().min(1).required(),
+  mana: yup.number().required(),
+  attack: yup.number().required(),
+  magic: yup.number().required(),
+  stamina: yup.number().required(),
 });
 export const memberSchema = yup.object({
   id: yup.string().required(),

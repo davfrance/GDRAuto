@@ -120,6 +120,7 @@ function ClassSelectionModal({
                 <div className=" text-primary flex flex-col items-start">
                   <SubTitle>{classes[className].renderName}</SubTitle>
 
+                  <div>HP: {classes[className].stats.hp}</div>
                   <div>Mana: {classes[className].stats.mana}</div>
                   <div>Attack: {classes[className].stats.attack}</div>
                   <div>Magic: {classes[className].stats.magic}</div>

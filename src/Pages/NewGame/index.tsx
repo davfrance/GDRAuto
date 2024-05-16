@@ -11,7 +11,7 @@ import { useDispatch } from 'react-redux';
 import { saveGame } from '../../Redux/Slices/Game';
 import { useNavigate } from 'react-router-dom';
 import { gameCreationSchema } from '../../Validation/GameCreationSchema';
-import { uuidv4 } from '../../Utils';
+import { generateRelationsMap, uuidv4 } from '../../Utils';
 
 function NewGame() {
   const [openNewUser, setOpenNewUser] = useState<number>(NaN);
@@ -20,7 +20,7 @@ function NewGame() {
   const navigate = useNavigate();
   const formik = useFormik<IGame>({
     validationSchema: gameCreationSchema,
-    initialValues: { teams: [], id: uuidv4() },
+    initialValues: { teams: [], id: uuidv4(), relations: generateRelationsMap() },
     validateOnChange: true,
     validateOnMount: true,
     onSubmit: values => {
@@ -58,7 +58,11 @@ function NewGame() {
                     key={member.id}
                   >
                     <img
-                      src={member.image || member.class?.iconImageUrl || DEFAULT_AVATAR}
+                      src={
+                        member.image ||
+                        member.class?.iconImageUrl ||
+                        DEFAULT_AVATAR
+                      }
                       alt=""
                       className="w-16 aspect-square rounded-full"
                     />
@@ -69,13 +73,15 @@ function NewGame() {
                   </div>
                 ))}
               </div>
-              <Button
-                onClick={() => {
-                  setOpenNewUser(i);
-                }}
-              >
-                Add a member to the party{' '}
-              </Button>
+              {team.members.length < 2 ? (
+                <Button
+                  onClick={() => {
+                    setOpenNewUser(i);
+                  }}
+                >
+                  Add a member to the party
+                </Button>
+              ) : null}
 
               <NewUser
                 formik={formik}

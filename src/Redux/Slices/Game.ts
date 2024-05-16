@@ -9,6 +9,7 @@ export interface CounterState {
 const initialState: IGame = {
   teams: [],
   id: '',
+  relations:{}
 };
 
 export const GameSlice = createSlice({
