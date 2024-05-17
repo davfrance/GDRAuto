@@ -54,7 +54,7 @@ function NewGame() {
               <div className="flex flex-row flex-wrap gap-8 h-40 overflow-y-auto">
                 {team.members.map(member => (
                   <div
-                    className=" p-4 rounded-md bg-secondary flex flex-col justify-center items-center"
+                    className=" p-4 rounded-md flex flex-col justify-center items-center"
                     key={member.id}
                   >
                     <img

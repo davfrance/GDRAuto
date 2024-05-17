@@ -108,16 +108,16 @@ function ClassSelectionModal({
         {classesKeys.map((className, index) => (
           <div className="w-full h-full " key={index}>
             <div className="relative h-full desktop:aspect-verticalMobile laptop:min-w-700px m-auto rounded-lg">
-              <div className="relative bg-blend-darken w-full h-full rounded-lg">
+              <div className="relative flex flex-row justify-center items-center bg-blend-darken w-full h-full rounded-lg">
                 <img
                   className="absolute h-full w-auto rounded-lg"
                   src={classes[className].imageUrl} // Assuming you have an imageUrl in your classes object
                   alt={classes[className].renderName}
                 />
-                <div className="absolute opacity-75 rounded-lg bg-gradient-to-b from-transparent	 via-black/50 to-black/75 h-full w-full" />
+                <div className="absolute opacity-75 aspect-verticalMobile rounded-lg bg-gradient-to-b from-transparent	 via-black/50 to-black/75 h-full" />
               </div>
-              <div className="absolute bottom-10 left-4 p-2">
-                <div className=" text-primary flex flex-col items-start">
+              <div className="absolute bottom-10 left-4 p-2 desktop:text-primary laptop:!text-black">
+                <div className= "flex flex-col items-start ">
                   <SubTitle>{classes[className].renderName}</SubTitle>
 
                   <div>HP: {classes[className].stats.hp}</div>

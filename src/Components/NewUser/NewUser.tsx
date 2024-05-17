@@ -57,7 +57,18 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
     }, 0);
     formikNewUser.setFieldValue('prime', PRIME_NUMBERS[num]);
     console.log('erors', formikNewUser.errors);
-  }, [formik.values]);
+  }, [formik.values.teams]);
+
+
+  useEffect(()=> {
+    const newStats = {
+      mana : values.stats.mana,
+      attack : values.stats.attack,
+      magic : values.stats.magic,
+      stamina : values.stats.stamina
+    }
+    console.log("newStats",newStats);
+  }, [values.stats]) 
 
   const generateStats = () => {
     const stats: IStats = {
