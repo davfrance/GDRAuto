@@ -1,8 +1,7 @@
 import { Button, Input } from '@material-tailwind/react';
 import { FormikProps, useFormik } from 'formik';
-import { useEffect, useState } from 'react';
-import { IGame } from '../../Pages/NewGame';
-import { ITeam } from '../../Types/Game';
+import { useEffect } from 'react';
+import { IGame, ITeam } from '../../Types/Game';
 import { uuidv4 } from '../../Utils';
 import { Modal } from '@mui/material';
 

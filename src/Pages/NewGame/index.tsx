@@ -1,5 +1,5 @@
 import { useFormik } from 'formik';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { IGame } from '../../Types/Game';
 import { Button } from '@material-tailwind/react';
 import Title from '../../Components/Titles/Title';
@@ -11,7 +11,11 @@ import { useDispatch } from 'react-redux';
 import { saveGame } from '../../Redux/Slices/Game';
 import { useNavigate } from 'react-router-dom';
 import { gameCreationSchema } from '../../Validation/GameCreationSchema';
-import { generateRelationsMap, uuidv4 } from '../../Utils';
+import {
+  generateMissingTeams,
+  generateRelationsMap,
+  uuidv4,
+} from '../../Utils';
 
 function NewGame() {
   const [openNewUser, setOpenNewUser] = useState<number>(NaN);
@@ -20,23 +24,25 @@ function NewGame() {
   const navigate = useNavigate();
   const formik = useFormik<IGame>({
     validationSchema: gameCreationSchema,
-    initialValues: { teams: [], id: uuidv4(), relations: generateRelationsMap() },
+    initialValues: {
+      teams: [],
+      id: uuidv4(),
+      relations: generateRelationsMap(),
+    },
     validateOnChange: true,
     validateOnMount: true,
-    onSubmit: values => {
-      dispatch(saveGame(values));
-      navigate('/game');
+    onSubmit: () => {
+      return;
     },
   });
-  const { values, handleChange, isValid, errors } = formik;
-
-  useEffect(() => {
-    console.log(values);
-  }, [values]);
-
-  useEffect(() => {
-    console.log('errors', errors);
-  }, [errors, values]);
+  function submitForm(values: IGame) {
+    const valuesOutput = { ...values };
+    valuesOutput.teams = [...values.teams, ...generateMissingTeams(values)];
+    console.log('output', valuesOutput);
+    dispatch(saveGame(valuesOutput));
+    navigate('/game');
+  }
+  const { values, isValid } = formik;
 
   return (
     <div className="w-full h-full ">
@@ -101,7 +107,14 @@ function NewGame() {
       ></NewTeam>
       <div className="!absolute bottom-16 right-10 flex gap-8">
         {isValid ? (
-          <Button type="submit">Add a new party to the game</Button>
+          <Button
+            type="submit"
+            onClick={() => {
+              submitForm(values);
+            }}
+          >
+            Start the game
+          </Button>
         ) : null}
         <Button
           onClick={() => {
