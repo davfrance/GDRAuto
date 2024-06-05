@@ -52,7 +52,7 @@ function ClassSelectionModal({
   handleClassSelection,
 }: ClassSelectionModalProps) {
   function renderClasses() {
-    let classesKeys = Object.keys(classes) as Array<keyof IClasses>;
+    const classesKeys = Object.keys(classes) as Array<keyof IClasses>;
 
     return (
       <Carousel
@@ -117,7 +117,7 @@ function ClassSelectionModal({
                 <div className="absolute opacity-75 aspect-verticalMobile rounded-lg bg-gradient-to-b from-transparent	 via-black/50 to-black/75 h-full" />
               </div>
               <div className="absolute bottom-10 left-4 p-2 desktop:text-primary laptop:!text-black">
-                <div className= "flex flex-col items-start ">
+                <div className="flex flex-col items-start ">
                   <SubTitle>{classes[className].renderName}</SubTitle>
 
                   <div>HP: {classes[className].stats.hp}</div>
@@ -143,7 +143,7 @@ function ClassSelectionModal({
       className="flex justify-center items-center "
       onClose={onClose}
     >
-      <div className="flex flex-col gap-4 justify-center items-center desktop:w-1/3 desktop:h-[90vh] laptop:h-full laptop:w-full p-8 m-auto bg-myWhite rounded-lg ">
+      <div className="flex flex-col gap-4 justify-center items-center desktop:w-1/2 desktop:h-[90vh] laptop:h-full laptop:w-full p-8 m-auto bg-myWhite rounded-lg ">
         <Title contrast>Select Your Class</Title>
         {renderClasses()}
       </div>

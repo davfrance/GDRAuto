@@ -1,5 +1,5 @@
 {
-  "name": "TalentKeepers",
+  "name": "auto-gdr",
   "private": true,
   "version": "0.0.0",
   "scripts": {
@@ -30,8 +30,8 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.59.8",
-    "@typescript-eslint/parser": "^5.59.8",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.41.0",
@@ -47,5 +47,9 @@
     "postcss": "^8.4.24",
     "prettier": "^2.8.8",
     "vite": "^4.3.9"
+  },
+  "resolutions": {
+    "wrap-ansi": "7.0.0",
+    "string-width": "4.1.0"
   }
 }

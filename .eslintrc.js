@@ -15,11 +15,16 @@ module.exports = {
     'plugin:jsx-a11y/strict',
     'plugin:import/recommended',
     'plugin:import/typescript',
-    'plugin:prettier/recommended',
+    'plugin:prettier/recommended'
   ],
   rules: {
     "no-use-before-define": "error",
-    "no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": [
+      2,
+      {
+        "args": "none"
+      }
+    ],
     "indent": ["error", 2],
     "react/react-in-jsx-scope": "off",
   },

@@ -1,13 +1,18 @@
 import { Button, Input } from '@material-tailwind/react';
 import { FormikProps, useFormik } from 'formik';
-import { useEffect, useMemo, useState } from 'react';
-import { IGame, IStats, IUser } from '../../Types/Game';
-import { uuidv4 } from '../../Utils';
+import { useEffect, useState } from 'react';
+import { IGame, IUser } from '../../Types/Game';
+import {
+  addClassStats,
+  getDefaultStats,
+  getUserPrimeNumber,
+  uuidv4,
+} from '../../Utils';
 import { Modal } from '@mui/material';
 import ClassSelectionModal from './ClassSelectionModal';
 import { IClasses, classes } from '../../Constants/classes';
 import { memberSchema } from '../../Validation/GameCreationSchema';
-import { PRIME_NUMBERS } from '../../Constants';
+import { DEFAULT_HP } from '../../Constants';
 
 export interface INewUser {
   formik: FormikProps<IGame>;
@@ -27,7 +32,7 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
       gender: '',
       class: undefined,
       image: '',
-      hp: 35,
+      hp: 0,
       stats: {
         mana: 0,
         attack: 0,
@@ -51,57 +56,30 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
   const { handleChange, values, handleSubmit } = formikNewUser;
 
   useEffect(() => {
-    const num = formik.values.teams.reduce((totPlayer, team) => {
-      console.log('dentro loop', totPlayer, team.members.length);
-      return totPlayer + team.members.length;
-    }, 0);
-    formikNewUser.setFieldValue('prime', PRIME_NUMBERS[num]);
-    console.log('erors', formikNewUser.errors);
+    formikNewUser.setFieldValue(
+      'prime',
+      getUserPrimeNumber(formik.values.teams)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formik.values.teams]);
 
-
-  useEffect(()=> {
+  useEffect(() => {
     const newStats = {
-      mana : values.stats.mana,
-      attack : values.stats.attack,
-      magic : values.stats.magic,
-      stamina : values.stats.stamina
-    }
-    console.log("newStats",newStats);
-  }, [values.stats]) 
+      mana: values.stats.mana,
+      attack: values.stats.attack,
+      magic: values.stats.magic,
+      stamina: values.stats.stamina,
+    };
+    console.log('newStats', newStats);
+  }, [values.stats]);
 
   const generateStats = () => {
-    const stats: IStats = {
-      mana: Math.floor(Math.random() * 7) + 4,
-      attack: Math.floor(Math.random() * 7) + 4,
-      magic: Math.floor(Math.random() * 7) + 4,
-      stamina: Math.floor(Math.random() * 7) + 4,
-    };
-
-    const statKeys = Object.keys(stats);
-    const maxStat = statKeys.reduce(
-      (max, key) =>
-        stats[key as keyof IStats] > max ? stats[key as keyof IStats] : max,
-      0
-    );
-    if (maxStat < 10) {
-      const randomKey = statKeys[Math.floor(Math.random() * statKeys.length)];
-      stats[randomKey as keyof IStats] = 10;
-    }
-    let newHP = values.hp;
+    const stats = getDefaultStats();
+    const hp = DEFAULT_HP;
     // Add class stats to the generated stats
     if (values.class) {
-      stats.mana += values.class.stats.mana;
-      stats.attack += values.class.stats.attack;
-      stats.magic += values.class.stats.magic;
-      stats.stamina += values.class.stats.stamina;
-      newHP += values.class.stats.hp
-      statKeys.forEach(key => {
-        if (stats[key as keyof IStats] <= 0) {
-          stats[key as keyof IStats] = 1;
-        }
-      });
-      formikNewUser.setFieldValue('stats', stats);
+      const { newStats, newHP } = addClassStats(stats, hp, values.class);
+      formikNewUser.setFieldValue('stats', newStats);
       formikNewUser.setFieldValue('hp', newHP);
       formikNewUser.validateForm();
     }
@@ -171,7 +149,10 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
               </p>
             </div>
           )}
-          <Button disabled={!formikNewUser.isValid || values.stats.attack == 0} type="submit">
+          <Button
+            disabled={!formikNewUser.isValid || values.stats.attack == 0}
+            type="submit"
+          >
             Save
           </Button>
         </div>
