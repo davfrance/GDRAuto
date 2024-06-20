@@ -5,7 +5,16 @@ import {
   USERS_NAMES,
 } from '../Constants';
 import { IClass, IClasses, classes } from '../Constants/classes';
-import { IGame, IRelation, IStats, ITeam, IUser } from '../Types/Game';
+import {
+  EventTypes,
+  IEventsActions,
+  IGame,
+  IRelation,
+  IStats,
+  ITeam,
+  ITurn,
+  IUser,
+} from '../Types/Game';
 
 export function uuidv4(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -141,4 +150,43 @@ export function generateMissingTeams(gameState: IGame): ITeam[] {
     newTeams.push(newTeam);
   }
   return newTeams;
+}
+export function getAction(user: IUser, team: ITeam, lastTurn: ITurn | null) {
+  let allowedActions = [
+    EventTypes.ENCOUNTER,
+    EventTypes.KINGDOMDROP,
+    EventTypes.LOOT,
+    EventTypes.TRAVEL,
+  ];
+  if (lastTurn) {
+    allowedActions.push(
+      EventTypes.ATTACK,
+      EventTypes.RELATION_NEGATIVE,
+      EventTypes.RELATION_POSITIVE
+    );
+  }
+function createRandomAction(): any {
+  const actions:any = {}
+  allowedActions.forEach((action)=>{
+    actions[action] = IEventsActions[action]
+  }) 
+
+  const totalChance = Object.values(actions).reduce((acc, { chance }) => acc + chance, 0);
+  let randomNum = Math.floor(Math.random() * totalChance);
+  for (const [type, { chance, action }] of Object.entries(actions)) {
+    if (randomNum < chance) {
+      return {
+        type: type as EventTypes,
+        description: `A random ${type} event occurred.`,
+        involvedParties: [],
+        involvedPersons: [],
+      };
+    }
+    randomNum -= chance;
+  }
+  throw new Error('Failed to generate a random action');
+}
+
+  
+  
 }

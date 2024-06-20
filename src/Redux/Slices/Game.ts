@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { IGame, ITeam } from '../../Types/Game';
+import { IGame, ITeam, ITurn } from '../../Types/Game';
 
 export interface CounterState {
   value: number;
@@ -10,6 +10,8 @@ const initialState: IGame = {
   teams: [],
   id: '',
   relations: {},
+  history: [],
+  turn: {} as ITurn,
 };
 
 export const GameSlice = createSlice({
