@@ -6,13 +6,16 @@ import {
 } from '../Constants';
 import { IClass, IClasses, classes } from '../Constants/classes';
 import {
+  EventPossibilities,
   EventTypes,
+  IEvent,
   IEventsActions,
   IGame,
   IRelation,
   IStats,
   ITeam,
   ITurn,
+  ITurnEvent,
   IUser,
 } from '../Types/Game';
 
@@ -113,22 +116,23 @@ function generateRandomUser(alreadyUsedNames: string[], teams: ITeam[]): IUser {
   user.stats = newStats;
   user.hp = newHP;
   user.prime = getUserPrimeNumber(teams);
+  user.class = userClass;
   return user;
 }
-export function generateMissingTeams(gameState: IGame): ITeam[] {
-  const missingTeams = 8 - gameState.teams.length;
+export function generateMissingTeams(gameState: IGame | null): ITeam[] {
+  const missingTeams = 8 - (gameState?.teams?.length ?? 0);
   const newTeams: ITeam[] = [];
   const usedNames = [];
-  const alreadyUsedTeamNames = gameState.teams.map(team => team.name);
+  const alreadyUsedTeamNames = gameState?.teams.map(team => team.name) ?? [];
   for (let i = 0; i < missingTeams; i++) {
     const teamMembers: IUser[] = [];
     const firstMember = generateRandomUser(usedNames, [
-      ...gameState.teams,
+      ...(gameState?.teams ?? []),
       ...newTeams,
     ]);
     usedNames.push(firstMember.name);
     const secondMember = generateRandomUser(usedNames, [
-      ...gameState.teams,
+      ...(gameState?.teams ?? []),
       ...newTeams,
     ]);
     teamMembers.push(firstMember, secondMember);
@@ -151,13 +155,20 @@ export function generateMissingTeams(gameState: IGame): ITeam[] {
   }
   return newTeams;
 }
-export function getAction(user: IUser, team: ITeam, lastTurn: ITurn | null) {
-  let allowedActions = [
+
+export function getAction(
+  team: ITeam,
+  user: IUser,
+  lastTurn: ITurn | null
+): ITurnEvent {
+  const allowedActions = [
     EventTypes.ENCOUNTER,
     EventTypes.KINGDOMDROP,
     EventTypes.LOOT,
     EventTypes.TRAVEL,
   ];
+
+  // If there was a previous turn, allow more action types
   if (lastTurn) {
     allowedActions.push(
       EventTypes.ATTACK,
@@ -165,28 +176,86 @@ export function getAction(user: IUser, team: ITeam, lastTurn: ITurn | null) {
       EventTypes.RELATION_POSITIVE
     );
   }
-function createRandomAction(): any {
-  const actions:any = {}
-  allowedActions.forEach((action)=>{
-    actions[action] = IEventsActions[action]
-  }) 
 
-  const totalChance = Object.values(actions).reduce((acc, { chance }) => acc + chance, 0);
+  // Create actions object with chances
+  const actions: IEventsActions = {
+    [EventTypes.ATTACK]: { chance: 0, action: {} },
+    [EventTypes.LOOT]: { chance: 0, action: {} },
+    [EventTypes.KINGDOMDROP]: { chance: 0, action: {} },
+    [EventTypes.TRAVEL]: { chance: 0, action: {} },
+    [EventTypes.ENCOUNTER]: { chance: 0, action: {} },
+    [EventTypes.RELATION_POSITIVE]: { chance: 0, action: {} },
+    [EventTypes.RELATION_NEGATIVE]: { chance: 0, action: {} },
+  };
+
+  // Set chances for allowed actions
+  allowedActions.forEach(action => {
+    actions[action] = EventPossibilities[action];
+  });
+
+  // Calculate total chance
+  const totalChance: number = Object.values(actions).reduce(
+    (acc, { chance }) => acc + chance,
+    0
+  );
+
+  // Generate random action based on chances
   let randomNum = Math.floor(Math.random() * totalChance);
-  for (const [type, { chance, action }] of Object.entries(actions)) {
+  let selectedType = EventTypes.TRAVEL; // Default type
+  let description = `${user.name} traveled to a new location.`; // Default description
+
+  for (const [type, { chance }] of Object.entries(actions)) {
     if (randomNum < chance) {
-      return {
-        type: type as EventTypes,
-        description: `A random ${type} event occurred.`,
-        involvedParties: [],
-        involvedPersons: [],
-      };
+      selectedType = type as EventTypes;
+
+      // Generate description based on event type
+      switch (selectedType) {
+        case EventTypes.ATTACK:
+          description = `${user.name} attacked an enemy!`;
+          break;
+        case EventTypes.LOOT:
+          description = `${user.name} found some valuable items!`;
+          break;
+        case EventTypes.KINGDOMDROP:
+          description = `${user.name} discovered a kingdom drop!`;
+          break;
+        case EventTypes.TRAVEL:
+          description = `${user.name} traveled to a new location.`;
+          break;
+        case EventTypes.ENCOUNTER:
+          description = `${user.name} encountered something interesting!`;
+          break;
+        case EventTypes.RELATION_POSITIVE:
+          description = `${user.name} improved relations with another party.`;
+          break;
+        case EventTypes.RELATION_NEGATIVE:
+          description = `${user.name} worsened relations with another party.`;
+          break;
+        default:
+          description = `${user.name} performed an unknown action.`;
+      }
+      break;
     }
     randomNum -= chance;
   }
-  throw new Error('Failed to generate a random action');
-}
 
-  
-  
+  // Create the event object
+  const event: IEvent = {
+    type: selectedType,
+    description,
+    involvedParties: [team.id],
+    involvedPersons: [user.id],
+  };
+
+  // Return the complete ITurnEvent
+  return {
+    teamId: team.id,
+    memberId: user.id,
+    action: event,
+    timestamp: new Date().toISOString(),
+    type: event.type,
+    description: event.description,
+    involvedParties: event.involvedParties,
+    involvedPersons: event.involvedPersons,
+  };
 }

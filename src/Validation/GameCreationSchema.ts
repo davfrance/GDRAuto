@@ -7,7 +7,7 @@ const statsSchema: yup.ObjectSchema<IStats> = yup.object({
   magic: yup.number().required(),
   stamina: yup.number().required(),
 });
-export const memberSchema: yup.ObjectSchema<IUser> = yup.object({
+export const memberSchema = yup.object({
   id: yup.string().required(),
   name: yup.string().required(),
   gender: yup.string(),
@@ -26,20 +26,19 @@ export const memberSchema: yup.ObjectSchema<IUser> = yup.object({
         magic: yup.number().required(),
         stamina: yup.number().required(),
       })
-      .required(),
-    weapons: yup
-      .object()
-      .shape({
-        oneHand: yup.number().required(),
-        twoHands: yup.number().required(),
-        bow: yup.number().required(),
-        enchantments: yup.number().required(),
-      })
-      .required(),
-    passiveSkill: yup.string().required(),
-    renderName: yup.string().required(),
-    imageUrl: yup.string().required(),
-    iconImageUrl: yup.string().required(),
+    // weapons: yup
+    //   .object()
+    //   .shape({
+    //     oneHand: yup.number().required(),
+    //     twoHands: yup.number().required(),
+    //     bow: yup.number().required(),
+    //     enchantments: yup.number().required(),
+    //   })
+    //   .required(),
+    // passiveSkill: yup.string().required(),
+    // renderName: yup.string().required(),
+    // imageUrl: yup.string().required(),
+    // iconImageUrl: yup.string().required(),
   }),
   stats: statsSchema.required(),
   prime: yup.number().required(),

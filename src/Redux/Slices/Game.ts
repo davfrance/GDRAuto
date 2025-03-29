@@ -22,7 +22,11 @@ export const GameSlice = createSlice({
       state.teams = action.payload;
     },
     saveGame: (state, action: PayloadAction<IGame>) => {
-      state = action.payload;
+      return action.payload;
+    },
+    addTurn: (state, action: PayloadAction<ITurn>) => {
+      state.history.push(action.payload);
+      state.turn = action.payload;
     },
     reset: () => {
       return initialState;
@@ -31,6 +35,6 @@ export const GameSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const { saveTeams, reset, saveGame } = GameSlice.actions;
+export const { saveTeams, reset, saveGame, addTurn } = GameSlice.actions;
 
 export default GameSlice.reducer;

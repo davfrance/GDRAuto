@@ -30,10 +30,43 @@ export interface ITeam {
 export interface IRelation {
   [playerPrimeMulti: string]: number;
 }
+export enum EventTypes {
+  ATTACK = 'Attack',
+  LOOT = 'Loot',
+  KINGDOMDROP = 'Kingom Drop',
+  TRAVEL = 'Travel',
+  ENCOUNTER = 'Encounter',
+  RELATION_POSITIVE = 'Positive relation',
+  RELATION_NEGATIVE = 'Negative relation',
+}
+export interface IEvent {
+  type: EventTypes;
+  description: string;
+  involvedParties: string[];
+  involvedPersons: string[];
+}
+export interface ITurnEvent {
+  teamId: string;
+  memberId: string;
+  action: IEvent;
+  timestamp: string;
+  type: EventTypes;
+  description: string;
+  involvedParties: string[];
+  involvedPersons: string[];
+}
 
 export interface ITurn {
   turnNumber: number;
-  events: IEvent[];
+  events: ITurnEvent[];
+}
+
+export interface IGame {
+  teams: ITeam[];
+  id: string;
+  relations: IRelation;
+  history: ITurn[];
+  turn: ITurn;
 }
 
 export interface IFightEvent {}
@@ -52,17 +85,12 @@ export interface IFight {
   };
 }
 
-export enum EventTypes {
-  ATTACK = 'Attack',
-  LOOT = 'Loot',
-  KINGDOMDROP = 'Kingom Drop',
-  TRAVEL = 'Travel',
-  ENCOUNTER = 'Encounter',
-  RELATION_POSITIVE = 'Positive relation',
-  RELATION_NEGATIVE = 'Negative relation',
+export interface IEventActionObject {
+  chance: number;
+  action: object | object[]; // Adjust the type based on the actual structure of action
 }
-
-export const IEventsActions = {
+export type IEventsActions = Record<EventTypes, IEventActionObject>;
+export const EventPossibilities: IEventsActions = {
   [EventTypes.ATTACK]: { chance: 10, action: {} },
   [EventTypes.LOOT]: { chance: 15, action: {} },
   [EventTypes.KINGDOMDROP]: { chance: 5, action: {} },
@@ -71,18 +99,3 @@ export const IEventsActions = {
   [EventTypes.RELATION_POSITIVE]: { chance: 15, action: [{}, {}] },
   [EventTypes.RELATION_NEGATIVE]: { chance: 10, action: [{}, {}] },
 };
-
-export interface IEvent {
-  type: EventTypes;
-  description: string;
-  involvedParties: string[];
-  involvedPersons: string[];
-}
-
-export interface IGame {
-  teams: ITeam[];
-  id: string;
-  relations: IRelation;
-  history: ITurn[];
-  turn: ITurn;
-}

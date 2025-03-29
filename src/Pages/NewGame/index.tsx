@@ -25,9 +25,14 @@ function NewGame() {
   const formik = useFormik<IGame>({
     validationSchema: gameCreationSchema,
     initialValues: {
-      teams: [],
+      teams: [...generateMissingTeams(null)],
       id: uuidv4(),
       relations: generateRelationsMap(),
+      history: [],
+      turn: {
+        turnNumber: 0,
+        events: [],
+      },
     },
     validateOnChange: true,
     validateOnMount: true,
@@ -42,8 +47,9 @@ function NewGame() {
     dispatch(saveGame(valuesOutput));
     navigate('/game');
   }
-  const { values, isValid } = formik;
-
+  const { values, isValid, errors } = formik;
+  console.error('errors', errors);
+  console.log('values', values);
   return (
     <div className="w-full h-full ">
       <Title>You are now creating a new game! Good luck explorer!</Title>
