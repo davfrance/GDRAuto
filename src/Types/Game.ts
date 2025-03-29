@@ -1,4 +1,5 @@
 import { IClass } from '../Constants/classes';
+import { IWeapon } from './Weapons';
 
 export interface IStats {
   mana: number;
@@ -12,7 +13,7 @@ export interface IUser {
   name: string;
   gender?: string;
   image?: string;
-  weapon?: object;
+  weapon?: IWeapon;
   hunger: number;
   thirst: number;
   hp: number;
@@ -54,6 +55,7 @@ export interface ITurnEvent {
   description: string;
   involvedParties: string[];
   involvedPersons: string[];
+  lootedWeapon?: IWeapon;
 }
 
 export interface ITurn {

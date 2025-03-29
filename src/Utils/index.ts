@@ -5,6 +5,7 @@ import {
   USERS_NAMES,
 } from '../Constants';
 import { IClass, IClasses, classes } from '../Constants/classes';
+import { getRandomWeapon } from '../Constants/weapons';
 import {
   EventPossibilities,
   EventTypes,
@@ -203,6 +204,7 @@ export function getAction(
   let randomNum = Math.floor(Math.random() * totalChance);
   let selectedType = EventTypes.TRAVEL; // Default type
   let description = `${user.name} traveled to a new location.`; // Default description
+  let lootedWeapon = null;
 
   for (const [type, { chance }] of Object.entries(actions)) {
     if (randomNum < chance) {
@@ -214,10 +216,12 @@ export function getAction(
           description = `${user.name} attacked an enemy!`;
           break;
         case EventTypes.LOOT:
-          description = `${user.name} found some valuable items!`;
+          lootedWeapon = getRandomWeapon();
+          description = `${user.name} found a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}!`;
           break;
         case EventTypes.KINGDOMDROP:
-          description = `${user.name} discovered a kingdom drop!`;
+          lootedWeapon = getRandomWeapon(true); // Pass true for kingdom drops
+          description = `${user.name} discovered a kingdom drop: a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}!`;
           break;
         case EventTypes.TRAVEL:
           description = `${user.name} traveled to a new location.`;
@@ -247,6 +251,11 @@ export function getAction(
     involvedPersons: [user.id],
   };
 
+  // If a weapon was looted, add it to the event
+  if (lootedWeapon) {
+    (event as any).lootedWeapon = lootedWeapon;
+  }
+
   // Return the complete ITurnEvent
   return {
     teamId: team.id,
@@ -257,5 +266,6 @@ export function getAction(
     description: event.description,
     involvedParties: event.involvedParties,
     involvedPersons: event.involvedPersons,
+    lootedWeapon: lootedWeapon,
   };
 }
