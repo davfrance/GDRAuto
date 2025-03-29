@@ -74,7 +74,7 @@ export const WEAPONS: IWeapon[] = [
 
 // Function to get a random weapon based on rarity chances
 // When isKingdomDrop is true, only rare or higher weapons will be returned
-export function getRandomWeapon(isKingdomDrop: boolean = false): IWeapon {
+export function getRandomWeapon(isKingdomDrop = false): IWeapon {
   // Define rarity chances (percentages)
   const rarityChances = isKingdomDrop
     ? {

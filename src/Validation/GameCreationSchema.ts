@@ -17,15 +17,13 @@ export const memberSchema = yup.object({
   thirst: yup.number().required(),
   hp: yup.number().required(),
   class: yup.object().shape({
-    stats: yup
-      .object()
-      .shape({
-        hp: yup.number().required(),
-        mana: yup.number().required(),
-        attack: yup.number().required(),
-        magic: yup.number().required(),
-        stamina: yup.number().required(),
-      })
+    stats: yup.object().shape({
+      hp: yup.number().required(),
+      mana: yup.number().required(),
+      attack: yup.number().required(),
+      magic: yup.number().required(),
+      stamina: yup.number().required(),
+    }),
     // weapons: yup
     //   .object()
     //   .shape({
