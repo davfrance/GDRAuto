@@ -40,7 +40,7 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
         stamina: 0,
       },
       hunger: 10,
-      weapon: {},
+      weapon: undefined,
       thirst: 10,
     },
     validationSchema: memberSchema,

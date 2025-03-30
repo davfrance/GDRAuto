@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../Redux/store';
-import { EventTypes, ITurn, ITurnEvent } from '../../Types/Game';
+import { EventTypes, ITeam, ITurn, ITurnEvent } from '../../Types/Game';
 import { getAction } from '../../Utils';
-import { addTurn } from '../../Redux/Slices/Game';
-import { IWeapon } from '../../Types/Weapons';
-import { Tooltip } from '@material-tailwind/react';
+import { addTurn, saveTeams } from '../../Redux/Slices/Game';
+import { useNavigate } from 'react-router-dom';
+import MemberCard from '../../Components/UserCard/MemberCard';
+import WeaponCard from '../../Components/Weapons/WeaponCard';
 
 function Game() {
   const [actualTurn, setActualTurn] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const gameState = useSelector((state: RootState) => state.gameReducer);
+
+  // Redirect to NewGame page if there are no teams
+  useEffect(() => {
+    if (gameState.teams.length === 0) {
+      navigate('/newGame');
+    }
+  }, [gameState.teams.length, navigate]);
 
   const generateTurn = () => {
     let lastTurn: ITurn | null = null;
@@ -26,17 +35,57 @@ function Game() {
     };
 
     gameState.teams.forEach(team => {
+      // Generate one action per team instead of per member
+      const teamAction = getAction(team, lastTurn, gameState, dispatch);
+
+      // Create an event for each team member with the same action
       team.members.forEach(member => {
-        const action = getAction(team, member, lastTurn);
+        // Determine if this member should get the weapon (if it's a loot action)
+        const isBestMemberForWeapon =
+          (teamAction.type === EventTypes.LOOT ||
+            teamAction.type === EventTypes.KINGDOMDROP) &&
+          teamAction.lootedWeapon &&
+          teamAction.description.includes(member.name);
+
+        // If this member is the best for the weapon, update their weapon
+        if (isBestMemberForWeapon && teamAction.lootedWeapon) {
+          // In a real implementation, you would update the member's weapon here
+          // This would require a Redux action to update the member's weapon
+          // For now, we'll just include it in the event
+          console.log('member', member);
+          console.log('NewTeam', [
+            ...gameState.teams.filter(t => t.id !== team.id),
+            {
+              ...team,
+              members: [
+                ...team.members.filter(m => m.id !== member.id),
+                { ...member, weapon: teamAction.lootedWeapon },
+              ],
+            },
+          ]);
+          dispatch(
+            saveTeams([
+              ...gameState.teams.filter(t => t.id !== team.id),
+              {
+                ...team,
+                members: [
+                  ...team.members.filter(m => m.id !== member.id),
+                  { ...member, weapon: teamAction.lootedWeapon },
+                ],
+              },
+            ])
+          );
+        }
+
         newTurn.events.push({
           teamId: team.id,
           memberId: member.id,
-          action,
+          action: teamAction,
           timestamp: new Date().toISOString(),
-          type: action.type,
-          description: action.description,
-          involvedParties: action.involvedParties,
-          involvedPersons: action.involvedPersons,
+          type: teamAction.type,
+          description: teamAction.description,
+          involvedParties: teamAction.involvedParties,
+          involvedPersons: teamAction.involvedPersons,
         });
       });
     });
@@ -55,7 +104,7 @@ function Game() {
       setIsLoading(false);
     }, 500);
   };
-
+  console.log('gameState', gameState.history, gameState.teams);
   // Helper function to group events by team
   const groupEventsByTeam = (events: ITurnEvent[]) => {
     const grouped: Record<string, ITurnEvent[]> = {};
@@ -69,76 +118,35 @@ function Game() {
 
     return grouped;
   };
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'Common':
-        return 'text-gray-600';
-      case 'Uncommon':
-        return 'text-green-600';
-      case 'Rare':
-        return 'text-blue-600';
-      case 'Epic':
-        return 'text-purple-600';
-      case 'Legendary':
-        return 'text-orange-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
-  // Function to render weapon details for tooltip content
-  const renderWeaponDetails = (weapon: IWeapon) => {
-    return (
-      <div className="p-2">
-        <h4 className="font-semibold text-sm mb-1">{weapon.name}</h4>
-        <div className="grid grid-cols-2 gap-x-4 text-sm">
-          <p>
-            Type: <span className="font-medium">{weapon.type}</span>
-          </p>
-          <p>
-            Rarity:{' '}
-            <span className={`font-medium ${getRarityColor(weapon.rarity)}`}>
-              {weapon.rarity}
-            </span>
-          </p>
-          <p>
-            Damage: <span className="font-medium">{weapon.damage}</span>
-          </p>
-          <p>
-            Durability: <span className="font-medium">{weapon.durability}</span>
-          </p>
-        </div>
-        {weapon.effects && weapon.effects.length > 0 && (
-          <div className="mt-1">
-            <p className="text-sm font-medium">Effects:</p>
-            <ul className="list-disc list-inside text-sm">
-              {weapon.effects.map((effect, i) => (
-                <li key={i}>{effect}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <p className="text-sm italic mt-1">{weapon.description}</p>
-      </div>
-    );
+
+  // Helper function to get unique team actions
+  // Since all members of a team now have the same action, we only need to display it once
+  const getUniqueTeamAction = (events: ITurnEvent[]) => {
+    if (events.length === 0) return null;
+    return events[0]; // All team members have the same action, so we can just take the first one
   };
 
-  // Function to render weapon name with appropriate color
-  const renderWeaponName = (weapon: IWeapon) => {
-    return (
-      <Tooltip
-        content={renderWeaponDetails(weapon)}
-        placement="bottom"
-        className="z-50"
-      >
-        <span
-          className={`font-medium cursor-pointer ${getRarityColor(
-            weapon.rarity
-          )}`}
-        >
-          {weapon.name}
-        </span>
-      </Tooltip>
-    );
+  // Helper function to find which team member gets a looted weapon
+  const getMemberWithLootedWeapon = (events: ITurnEvent[], team: ITeam) => {
+    if (events.length === 0 || !team) return null;
+
+    // For loot events, find the member mentioned in the description
+    if (
+      events[0].type === EventTypes.LOOT ||
+      events[0].type === EventTypes.KINGDOMDROP
+    ) {
+      // First check if there's a looted weapon
+      if (!events[0].action.lootedWeapon) return null;
+
+      // Find which team member is mentioned in the description
+      for (const member of team.members) {
+        if (events[0].description.includes(member.name)) {
+          return events.find(event => event.memberId === member.id);
+        }
+      }
+    }
+
+    return null;
   };
 
   // Function to get color class based on rarity
@@ -176,52 +184,134 @@ function Game() {
               )
             ).map(([teamId, events]) => {
               const team = gameState.teams.find(t => t.id === teamId);
+              const teamAction = getUniqueTeamAction(events);
+              /* eslint-disable @typescript-eslint/no-non-null-assertion */
+              // eslint-disable-next-line @typescript-eslint/no-extra-non-null-assertion
+              const memberWithLoot = getMemberWithLootedWeapon(events, team!!);
+              if (!teamAction) return null;
+
+              // Only show interactions when a second team is involved or for special events like loot
+              const shouldShowEvent =
+                teamAction.involvedParties?.length > 0 ||
+                teamAction.type === EventTypes.LOOT ||
+                teamAction.type === EventTypes.KINGDOMDROP;
+
+              if (!shouldShowEvent) return null;
+
               return (
                 <div
                   key={teamId}
                   className="mb-6 border-l-4 border-indigo-500 pl-4 pb-2"
                 >
-                  <h4 className="text-lg font-semibold mb-2">{team?.name}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {events.map((event, index) => {
-                      const member = gameState.teams
-                        .flatMap(t => t.members)
-                        .find(m => m.id === event.memberId);
+                  <div className="border rounded-md p-4 bg-gray-50 shadow-sm flex">
+                    <div className="flex-grow">
+                      <p className="mb-2 text-lg">{teamAction.description}</p>
+                      <p className="text-sm text-gray-600 mb-3">
+                        {teamAction.type}
+                      </p>
 
-                      return (
-                        <div
-                          key={index}
-                          className="border rounded-md p-3 bg-gray-50 shadow-sm"
-                        >
-                          <div className="flex items-center mb-2">
-                            {member?.image && (
-                              <img
-                                src={member.image}
-                                alt={member?.name}
-                                className="w-8 h-8 rounded-full mr-2"
-                              />
-                            )}
-                            <p className="font-medium">{member?.name}</p>
+                      {/* Display involved teams with more prominence */}
+                      {teamAction.involvedParties &&
+                        teamAction.involvedParties.length > 0 &&
+                        // First check if there are any teams to display after filtering
+                        teamAction.involvedParties
+                          .filter(partyId => partyId !== teamId)
+                          .some(partyId =>
+                            gameState.teams.some(t => t.id === partyId)
+                          ) && (
+                          <div className="mb-3 p-2 bg-indigo-50 rounded border border-indigo-200">
+                            <p className="font-medium text-indigo-700">
+                              Interacting with:{' '}
+                              <span className="font-bold">
+                                {teamAction.involvedParties
+                                  .map(partyId => {
+                                    // Only show other teams, not the current team
+                                    if (partyId === teamId) return null;
+                                    const involvedTeam = gameState.teams.find(
+                                      t => t.id === partyId
+                                    );
+                                    return involvedTeam
+                                      ? involvedTeam.name
+                                      : '';
+                                  })
+                                  .filter(Boolean)
+                                  .join(', ')}
+                              </span>
+                            </p>
                           </div>
-                          <p className="mb-1">
-                            <span className="font-medium">Action:</span>{' '}
-                            {event.description}
-                          </p>
-                          <p className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium">Type:</span>{' '}
-                            {event.type}
-                          </p>
-                          {event.type === EventTypes.LOOT &&
-                            event.action.lootedWeapon && (
-                              <p className="mb-1">
-                                <span className="font-medium">Found:</span>{' '}
-                                {renderWeaponName(event.action.lootedWeapon)}
-                              </p>
+                        )}
+
+                      {/* Display looted weapon if applicable */}
+                      {(teamAction.type === EventTypes.LOOT ||
+                        teamAction.type === EventTypes.KINGDOMDROP) &&
+                        teamAction.action.lootedWeapon && (
+                          <div className="mt-3 p-3 bg-white rounded-md border border-gray-200">
+                            <p className="font-medium mb-2">Loot Found:</p>
+                            <div className="flex items-center">
+                              <WeaponCard
+                                weapon={teamAction.action.lootedWeapon}
+                              ></WeaponCard>
+                            </div>
+
+                            {/* Show which team member gets the weapon */}
+                            {memberWithLoot && (
+                              <div className="mt-2 flex items-center">
+                                <p className="text-sm">
+                                  <span className="font-medium">
+                                    Assigned to:
+                                  </span>{' '}
+                                  {
+                                    team?.members.find(
+                                      m => m.id === memberWithLoot.memberId
+                                    )?.name
+                                  }
+                                </p>
+                              </div>
                             )}
-                        </div>
-                      );
-                    })}
+                          </div>
+                        )}
+                    </div>
+
+                    {/* Team members section on the right side */}
+                    <div className="ml-4 border-l pl-4 flex flex-col justify-center min-w-[120px]">
+                      <h4 className="text-xs font-semibold mb-2 text-gray-700">
+                        Team Members:
+                      </h4>
+                      <div className="flex flex-col gap-2">
+                        {team?.members.map(member => {
+                          console.log('member fuori', member);
+                          return (
+                            <MemberCard
+                              member={member}
+                              key={member.id}
+                            ></MemberCard>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Only display team members for loot events to show who received the item */}
+                  {(teamAction.type === EventTypes.LOOT ||
+                    teamAction.type === EventTypes.KINGDOMDROP) &&
+                    teamAction.action.lootedWeapon &&
+                    memberWithLoot && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium mb-2">Received by:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {team?.members
+                            .filter(
+                              member => member.id === memberWithLoot.memberId
+                            )
+                            .map(member => (
+                              <MemberCard
+                                member={member}
+                                key={member.id}
+                              ></MemberCard>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                 </div>
               );
             })}

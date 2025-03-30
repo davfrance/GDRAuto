@@ -45,6 +45,7 @@ export interface IEvent {
   description: string;
   involvedParties: string[];
   involvedPersons: string[];
+  lootedWeapon?: IWeapon | null;
 }
 export interface ITurnEvent {
   teamId: string;
@@ -55,7 +56,6 @@ export interface ITurnEvent {
   description: string;
   involvedParties: string[];
   involvedPersons: string[];
-  lootedWeapon?: IWeapon;
 }
 
 export interface ITurn {
