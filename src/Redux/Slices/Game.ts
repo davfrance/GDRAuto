@@ -21,6 +21,14 @@ export const GameSlice = createSlice({
     saveTeams: (state, action: PayloadAction<ITeam[]>) => {
       state.teams = action.payload;
     },
+    saveTeam: (state, action: PayloadAction<ITeam>) => {
+      const team = action.payload;
+      const existingTeamIndex = state.teams.findIndex(t => t.id === team.id);
+      if (existingTeamIndex !== -1) {
+        state.teams[existingTeamIndex] = team;
+        return;
+      }
+    },
     saveGame: (state, action: PayloadAction<IGame>) => {
       return action.payload;
     },
@@ -52,7 +60,7 @@ export const GameSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const { saveTeams, reset, saveGame, addTurn, updateRelation } =
+export const { saveTeams, reset, saveGame, addTurn, updateRelation, saveTeam } =
   GameSlice.actions;
 
 export default GameSlice.reducer;
