@@ -12,12 +12,14 @@ import RelationsTab from '../../Components/GamePageTabs/RelationsTab';
 function Game() {
   const [actualTurn, setActualTurn] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedTeamPrime, setSelectedTeamPrime] = useState<number | null>(
+    null
+  );
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const gameState = useSelector((state: RootState) => state.gameReducer);
-  console.log(selectedTeamId, 'selectedTeamId');
+  console.log(selectedTeamPrime, 'selectedTeamPrime');
   // Redirect to NewGame page if there are no teams
   useEffect(() => {
     if (gameState.teams.length === 0) {
@@ -137,7 +139,7 @@ function Game() {
   return (
     <div
       className="p-4 w-full mx-auto"
-      onClick={() => setSelectedTeamId(null)}
+      onClick={() => setSelectedTeamPrime(null)}
       aria-hidden="true"
     >
       <div className="flex justify-center mb-6">
@@ -191,7 +193,7 @@ function Game() {
                     className="mb-6 border-l-4 border-indigo-500 pl-4 pb-2"
                     onClick={e => {
                       e.stopPropagation();
-                      setSelectedTeamId(team.id);
+                      setSelectedTeamPrime(team.prime);
                     }}
                     aria-hidden="true"
                   >
@@ -309,11 +311,12 @@ function Game() {
                 );
               })}
 
-              {selectedTeamId ? (
+              {selectedTeamPrime ? (
                 <div className="w-1/3 pl-6 border-l">
                   <RelationsTab
-                    selectedTeamId={selectedTeamId}
+                    selectedTeamPrime={selectedTeamPrime}
                     relations={gameState.relations}
+                    teams={gameState.teams}
                   />
                 </div>
               ) : null}

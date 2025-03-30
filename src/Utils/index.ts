@@ -68,10 +68,13 @@ export function addClassStats(
   });
   return { newStats, newHP };
 }
-export function generateRelationsMap(): IRelation {
+export function generateRelationsMap(teams: ITeam[]): IRelation {
   const relations: IRelation = {};
-  PRIME_NUMBERS.forEach(primeNumber => {
-    PRIME_NUMBERS.forEach(secondPrimeNumber => {
+
+  teams.forEach(team => {
+    const primeNumber = team.prime;
+    teams.forEach(secondTeam => {
+      const secondPrimeNumber = secondTeam.prime;
       if (primeNumber != secondPrimeNumber)
         relations[primeNumber * secondPrimeNumber] = 50;
     });
@@ -79,10 +82,7 @@ export function generateRelationsMap(): IRelation {
   return relations;
 }
 export function getUserPrimeNumber(teams: ITeam[]): number {
-  const num = teams.reduce((totPlayer, team) => {
-    return totPlayer + team.members.length;
-  }, 0);
-  return PRIME_NUMBERS[num];
+  return PRIME_NUMBERS[teams.length];
 }
 function generateRandomUser(alreadyUsedNames: string[], teams: ITeam[]): IUser {
   const user: IUser = {
@@ -97,7 +97,6 @@ function generateRandomUser(alreadyUsedNames: string[], teams: ITeam[]): IUser {
       magic: 0,
       stamina: 0,
     },
-    prime: NaN,
     weapon: undefined,
     class: undefined,
   };
@@ -119,7 +118,6 @@ function generateRandomUser(alreadyUsedNames: string[], teams: ITeam[]): IUser {
   const { newStats, newHP } = addClassStats(baseStats, DEFAULT_HP, userClass);
   user.stats = newStats;
   user.hp = newHP;
-  user.prime = getUserPrimeNumber(teams);
   user.class = userClass;
   return user;
 }
@@ -143,8 +141,6 @@ export function generateMissingTeams(gameState: IGame | null): ITeam[] {
     let teamName = '';
     while (teamName === '') {
       const randNumForName = Math.floor(Math.random() * PARTIES_NAMES.length);
-      console.log('alreadyUsedTeamNames', alreadyUsedTeamNames);
-      console.log('name', PARTIES_NAMES[randNumForName], randNumForName);
       if (!alreadyUsedTeamNames.includes(PARTIES_NAMES[randNumForName])) {
         teamName = PARTIES_NAMES[randNumForName];
       }
@@ -154,6 +150,7 @@ export function generateMissingTeams(gameState: IGame | null): ITeam[] {
       id: uuidv4(),
       members: [firstMember, secondMember],
       name: teamName,
+      prime: getUserPrimeNumber([...(gameState?.teams ?? []), ...newTeams]),
     };
     newTeams.push(newTeam);
   }
@@ -373,12 +370,11 @@ export function getAction(
             // Update relations in game state if dispatch and gameState are provided
             if (dispatch && gameState && encounteredTeamId) {
               // Get the prime numbers for both teams
-              const currentTeamPrime = team.members[0].prime;
+              const currentTeamPrime = team.prime;
               const encounteredTeam = gameState.teams.find(
                 t => t.id === encounteredTeamId
               );
-              const encounteredTeamPrime =
-                encounteredTeam?.members[0]?.prime || 0;
+              const encounteredTeamPrime = encounteredTeam?.prime || 0;
 
               if (currentTeamPrime && encounteredTeamPrime) {
                 // Calculate the relation key (product of prime numbers)
@@ -400,12 +396,11 @@ export function getAction(
             // Update relations in game state if dispatch and gameState are provided
             if (dispatch && gameState && encounteredTeamId) {
               // Get the prime numbers for both teams
-              const currentTeamPrime = team.members[0].prime;
+              const currentTeamPrime = team.prime;
               const encounteredTeam = gameState.teams.find(
                 t => t.id === encounteredTeamId
               );
-              const encounteredTeamPrime =
-                encounteredTeam?.members[0]?.prime || 0;
+              const encounteredTeamPrime = encounteredTeam?.prime || 0;
 
               if (currentTeamPrime && encounteredTeamPrime) {
                 // Calculate the relation key (product of prime numbers)

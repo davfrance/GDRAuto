@@ -1,5 +1,5 @@
 import { useFormik } from 'formik';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IGame, ITeam } from '../../Types/Game';
 import { Button } from '@material-tailwind/react';
 import Title from '../../Components/Titles/Title';
@@ -15,6 +15,7 @@ import { gameCreationSchema } from '../../Validation/GameCreationSchema';
 import {
   generateMissingTeams,
   generateRelationsMap,
+  getUserPrimeNumber,
   uuidv4,
 } from '../../Utils';
 
@@ -30,7 +31,7 @@ function NewGame() {
     initialValues: {
       teams: [...generateMissingTeams(null)],
       id: uuidv4(),
-      relations: generateRelationsMap(),
+      relations: {},
       history: [],
       turn: {
         turnNumber: 0,
@@ -52,6 +53,15 @@ function NewGame() {
   const { values, isValid, errors } = formik;
   console.error('errors', errors);
   console.log('values', values);
+  useEffect(() => {
+    formik.setFieldValue('prime', getUserPrimeNumber(formik.values.teams));
+    formik.setFieldValue(
+      'relations',
+      generateRelationsMap(formik.values.teams)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formik.values.teams]);
+
   return (
     <div className="w-full h-full ">
       <Title>You are now creating a new game! Good luck explorer!</Title>

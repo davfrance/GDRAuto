@@ -19,13 +19,13 @@ export interface IUser {
   hp: number;
   class?: IClass;
   stats: IStats;
-  prime: number;
 }
 
 export interface ITeam {
   id: string;
   members: IUser[];
   name: string;
+  prime: number;
 }
 
 export interface IRelation {
