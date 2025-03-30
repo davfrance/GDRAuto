@@ -1,5 +1,5 @@
 import * as yup from 'yup';
-import { IGame, IStats, ITeam, IUser } from '../Types/Game';
+import { IGame, IStats, ITeam } from '../Types/Game';
 
 const statsSchema: yup.ObjectSchema<IStats> = yup.object({
   mana: yup.number().required(),
@@ -17,15 +17,13 @@ export const memberSchema = yup.object({
   thirst: yup.number().required(),
   hp: yup.number().required(),
   class: yup.object().shape({
-    stats: yup
-      .object()
-      .shape({
-        hp: yup.number().required(),
-        mana: yup.number().required(),
-        attack: yup.number().required(),
-        magic: yup.number().required(),
-        stamina: yup.number().required(),
-      })
+    stats: yup.object().shape({
+      hp: yup.number().required(),
+      mana: yup.number().required(),
+      attack: yup.number().required(),
+      magic: yup.number().required(),
+      stamina: yup.number().required(),
+    }),
     // weapons: yup
     //   .object()
     //   .shape({
@@ -44,13 +42,13 @@ export const memberSchema = yup.object({
   prime: yup.number().required(),
 });
 
-const teamSchema: yup.ObjectSchema<ITeam> = yup.object({
+const teamSchema = yup.object<ITeam>({
   id: yup.string().required(),
   members: yup.array().of(memberSchema).min(2).required(),
   name: yup.string().required(),
 });
 
-export const gameCreationSchema: yup.ObjectSchema<IGame> = yup.object({
+export const gameCreationSchema = yup.object<IGame>({
   id: yup.string().required(),
   teams: yup.array().of(teamSchema).min(2).required(),
   relations: yup.object(),

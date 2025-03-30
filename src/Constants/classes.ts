@@ -5,7 +5,7 @@ export interface IClassStats extends IStats {
   mana: number;
 }
 
-export interface IWeapon {
+export interface IWeaponStats {
   oneHand: number;
   twoHands: number;
   bow: number;
@@ -14,7 +14,7 @@ export interface IWeapon {
 
 export interface IClass {
   stats: IClassStats;
-  weapons: IWeapon;
+  weaponsStats: IWeaponStats;
   passiveSkill: string;
   renderName: string;
   imageUrl: string;
@@ -43,7 +43,7 @@ export const classes: IClasses = {
       magic: 1,
       stamina: 2,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 1,
       twoHands: 4,
       bow: 0,
@@ -63,7 +63,7 @@ export const classes: IClasses = {
       attack: 2,
       magic: 1,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 4,
       twoHands: 0,
       bow: 4,
@@ -83,7 +83,7 @@ export const classes: IClasses = {
       stamina: 0,
       magic: 4,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 2,
       twoHands: 0,
       bow: 0,
@@ -103,7 +103,7 @@ export const classes: IClasses = {
       attack: 0,
       magic: 1,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 2,
       twoHands: 0,
       bow: 5,
@@ -123,7 +123,7 @@ export const classes: IClasses = {
       attack: 2,
       magic: 3,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 3,
       twoHands: 0,
       bow: 2,
@@ -143,7 +143,7 @@ export const classes: IClasses = {
       attack: 1,
       magic: 0,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 4,
       twoHands: 4,
       bow: 0,
@@ -163,7 +163,7 @@ export const classes: IClasses = {
       attack: 4,
       magic: 0,
     },
-    weapons: {
+    weaponsStats: {
       oneHand: 4,
       twoHands: 4,
       bow: 0,

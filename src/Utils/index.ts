@@ -5,6 +5,7 @@ import {
   USERS_NAMES,
 } from '../Constants';
 import { IClass, IClasses, classes } from '../Constants/classes';
+import { getRandomWeapon } from '../Constants/weapons';
 import {
   EventPossibilities,
   EventTypes,
@@ -15,9 +16,10 @@ import {
   IStats,
   ITeam,
   ITurn,
-  ITurnEvent,
   IUser,
 } from '../Types/Game';
+import { updateRelation } from '../Redux/Slices/Game';
+import { IWeapon, WeaponType } from '../Types/Weapons';
 
 export function uuidv4(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -96,6 +98,8 @@ function generateRandomUser(alreadyUsedNames: string[], teams: ITeam[]): IUser {
       stamina: 0,
     },
     prime: NaN,
+    weapon: undefined,
+    class: undefined,
   };
   let found = false;
   while (found == false) {
@@ -156,11 +160,88 @@ export function generateMissingTeams(gameState: IGame | null): ITeam[] {
   return newTeams;
 }
 
+// Function to determine which team member would benefit most from a weapon
+export function getBestMemberForWeapon(team: ITeam, weapon: IWeapon): IUser {
+  // Default to first member if there's only one
+  if (team.members.length === 1) {
+    return team.members[0];
+  }
+
+  // Calculate a score for each member based on their stats and the weapon type
+  const memberScores = team.members.map(member => {
+    let score = 0;
+
+    // Score based on weapon type
+    switch (weapon.type) {
+      // Magic weapons (Staff, Wand) - prioritize members with high mana and magic
+      case WeaponType.STAFF:
+      case WeaponType.WAND:
+        score += member.stats.mana * 2;
+        score += member.stats.magic * 2;
+        break;
+
+      // Ranged weapons (Bow) - prioritize members with high stamina
+      case WeaponType.BOW:
+        score += member.stats.stamina * 1.5;
+        break;
+
+      // Heavy weapons (Axe, Mace) - prioritize members with high attack
+      case WeaponType.AXE:
+      case WeaponType.MACE:
+        score += member.stats.attack * 2;
+        break;
+
+      // Light weapons (Dagger) - balanced between attack and stamina
+      case WeaponType.DAGGER:
+        score += member.stats.attack * 1.2;
+        score += member.stats.stamina * 1.2;
+        break;
+
+      // Medium weapons (Sword, Spear) - balanced stats
+      case WeaponType.SWORD:
+      case WeaponType.SPEAR:
+      default:
+        score += member.stats.attack * 1.5;
+        score += member.stats.stamina * 0.8;
+        break;
+    }
+
+    // Consider class weapon proficiencies if available
+    if (member.class) {
+      switch (weapon.type) {
+        case WeaponType.SWORD:
+        case WeaponType.DAGGER:
+        case WeaponType.AXE:
+          score += member.class.weaponsStats.oneHand * 0.5;
+          break;
+        case WeaponType.MACE:
+        case WeaponType.SPEAR:
+          score += member.class.weaponsStats.twoHands * 0.5;
+          break;
+        case WeaponType.BOW:
+          score += member.class.weaponsStats.bow * 0.5;
+          break;
+        case WeaponType.STAFF:
+        case WeaponType.WAND:
+          score += member.class.weaponsStats.enchantments * 0.5;
+          break;
+      }
+    }
+
+    return { member, score };
+  });
+
+  // Return the member with the highest score
+  memberScores.sort((a, b) => b.score - a.score);
+  return memberScores[0].member;
+}
+
 export function getAction(
   team: ITeam,
-  user: IUser,
-  lastTurn: ITurn | null
-): ITurnEvent {
+  lastTurn: ITurn | null,
+  gameState?: IGame,
+  dispatch?: any
+): IEvent {
   const allowedActions = [
     EventTypes.ENCOUNTER,
     EventTypes.KINGDOMDROP,
@@ -168,13 +249,33 @@ export function getAction(
     EventTypes.TRAVEL,
   ];
 
-  // If there was a previous turn, allow more action types
+  // Track if this team had an encounter with another team in the last turn
+  let encounteredTeamId: string | null = null;
+
+  // Check if there was a previous turn and if this team had an encounter
   if (lastTurn) {
-    allowedActions.push(
-      EventTypes.ATTACK,
-      EventTypes.RELATION_NEGATIVE,
-      EventTypes.RELATION_POSITIVE
+    // Find if this team had an encounter in the previous turn
+    const previousTeamEvent = lastTurn.events.find(
+      event => event.teamId === team.id && event.type === EventTypes.ENCOUNTER
     );
+
+    // If team had an encounter, check if it involved another team
+    if (previousTeamEvent && previousTeamEvent.involvedParties.length > 1) {
+      // Find the other team involved (not the current team)
+      encounteredTeamId =
+        previousTeamEvent.involvedParties.find(
+          partyId => partyId !== team.id
+        ) || null;
+
+      // If there was an encounter with another team, allow relation and attack actions
+      if (encounteredTeamId) {
+        allowedActions.push(
+          EventTypes.ATTACK,
+          EventTypes.RELATION_NEGATIVE,
+          EventTypes.RELATION_POSITIVE
+        );
+      }
+    }
   }
 
   // Create actions object with chances
@@ -202,7 +303,8 @@ export function getAction(
   // Generate random action based on chances
   let randomNum = Math.floor(Math.random() * totalChance);
   let selectedType = EventTypes.TRAVEL; // Default type
-  let description = `${user.name} traveled to a new location.`; // Default description
+  let description = `Team ${team.name} traveled to a new location.`; // Default description
+  let lootedWeapon = null;
 
   for (const [type, { chance }] of Object.entries(actions)) {
     if (randomNum < chance) {
@@ -211,28 +313,115 @@ export function getAction(
       // Generate description based on event type
       switch (selectedType) {
         case EventTypes.ATTACK:
-          description = `${user.name} attacked an enemy!`;
+          if (encounteredTeamId) {
+            description = `Team ${team.name} attacked members of the ${encounteredTeamId} team!`;
+          } else {
+            description = `Team ${team.name} attacked enemies!`;
+          }
           break;
         case EventTypes.LOOT:
-          description = `${user.name} found some valuable items!`;
+          lootedWeapon = getRandomWeapon();
+          // Determine which team member would benefit most from this weapon
+          // eslint-disable-next-line no-case-declarations
+          const bestMemberForLoot = getBestMemberForWeapon(team, lootedWeapon);
+          description = `Team ${team.name} found a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForLoot.name} takes it.`;
           break;
         case EventTypes.KINGDOMDROP:
-          description = `${user.name} discovered a kingdom drop!`;
+          lootedWeapon = getRandomWeapon(true); // Pass true for kingdom drops
+          // Determine which team member would benefit most from this weapon
+          // eslint-disable-next-line no-case-declarations
+          const bestMemberForKingdom = getBestMemberForWeapon(
+            team,
+            lootedWeapon
+          );
+          description = `Team ${team.name} discovered a kingdom drop: a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForKingdom.name} takes it.`;
           break;
         case EventTypes.TRAVEL:
-          description = `${user.name} traveled to a new location.`;
+          description = `Team ${team.name} traveled to a new location.`;
           break;
         case EventTypes.ENCOUNTER:
-          description = `${user.name} encountered something interesting!`;
+          // For encounters, we need to potentially involve another team
+          // Randomly select another team to encounter (not the current team)
+          if (lastTurn) {
+            // Get all team IDs from the last turn
+            const allTeamIds = [
+              ...new Set(lastTurn.events.map(event => event.teamId)),
+            ];
+            // Filter out the current team
+            const otherTeamIds = allTeamIds.filter(id => id !== team.id);
+
+            if (otherTeamIds.length > 0) {
+              // Randomly select one of the other teams
+              const randomTeamId =
+                otherTeamIds[Math.floor(Math.random() * otherTeamIds.length)];
+              description = `Team ${team.name} encountered another team!`;
+              // We'll add the other team to involved parties after creating the event object
+              selectedType = EventTypes.ENCOUNTER;
+              // Store the team ID to add later
+              encounteredTeamId = randomTeamId;
+            } else {
+              description = `Team ${team.name} encountered something interesting!`;
+            }
+          } else {
+            description = `Team ${team.name} encountered something interesting!`;
+          }
           break;
         case EventTypes.RELATION_POSITIVE:
-          description = `${user.name} improved relations with another party.`;
+          if (encounteredTeamId) {
+            description = `Team ${team.name} improved relations with the team they encountered.`;
+
+            // Update relations in game state if dispatch and gameState are provided
+            if (dispatch && gameState && encounteredTeamId) {
+              // Get the prime numbers for both teams
+              const currentTeamPrime = team.members[0].prime;
+              const encounteredTeam = gameState.teams.find(
+                t => t.id === encounteredTeamId
+              );
+              const encounteredTeamPrime =
+                encounteredTeam?.members[0]?.prime || 0;
+
+              if (currentTeamPrime && encounteredTeamPrime) {
+                // Calculate the relation key (product of prime numbers)
+                const relationKey = (
+                  currentTeamPrime * encounteredTeamPrime
+                ).toString();
+                // Dispatch action to update relation (positive change: +10)
+                dispatch(updateRelation({ relationKey, change: 10 }));
+              }
+            }
+          } else {
+            description = `Team ${team.name} improved relations with another party.`;
+          }
           break;
         case EventTypes.RELATION_NEGATIVE:
-          description = `${user.name} worsened relations with another party.`;
+          if (encounteredTeamId) {
+            description = `Team ${team.name} worsened relations with the team they encountered.`;
+
+            // Update relations in game state if dispatch and gameState are provided
+            if (dispatch && gameState && encounteredTeamId) {
+              // Get the prime numbers for both teams
+              const currentTeamPrime = team.members[0].prime;
+              const encounteredTeam = gameState.teams.find(
+                t => t.id === encounteredTeamId
+              );
+              const encounteredTeamPrime =
+                encounteredTeam?.members[0]?.prime || 0;
+
+              if (currentTeamPrime && encounteredTeamPrime) {
+                // Calculate the relation key (product of prime numbers)
+                const relationKey = (
+                  currentTeamPrime * encounteredTeamPrime
+                ).toString();
+                // Dispatch action to update relation (negative change: -10)
+                dispatch(updateRelation({ relationKey, change: -10 }));
+              }
+            }
+          } else {
+            description = `Team ${team.name} worsened relations with another party.`;
+          }
           break;
         default:
-          description = `${user.name} performed an unknown action.`;
+          description = `Team ${team.name} performed an unknown action.`;
       }
       break;
     }
@@ -244,18 +433,21 @@ export function getAction(
     type: selectedType,
     description,
     involvedParties: [team.id],
-    involvedPersons: [user.id],
+    involvedPersons: team.members.map(member => member.id),
+    lootedWeapon: lootedWeapon,
   };
 
-  // Return the complete ITurnEvent
-  return {
-    teamId: team.id,
-    memberId: user.id,
-    action: event,
-    timestamp: new Date().toISOString(),
-    type: event.type,
-    description: event.description,
-    involvedParties: event.involvedParties,
-    involvedPersons: event.involvedPersons,
-  };
+  // If this is an encounter with another team or a relation/attack event following an encounter,
+  // add the encountered team to the involved parties
+  if (
+    encounteredTeamId &&
+    (selectedType === EventTypes.ENCOUNTER ||
+      selectedType === EventTypes.RELATION_POSITIVE ||
+      selectedType === EventTypes.RELATION_NEGATIVE ||
+      selectedType === EventTypes.ATTACK)
+  ) {
+    event.involvedParties.push(encounteredTeamId);
+  }
+
+  return event;
 }

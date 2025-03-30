@@ -1,12 +1,13 @@
 import { useFormik } from 'formik';
 import { useState } from 'react';
-import { IGame } from '../../Types/Game';
+import { IGame, ITeam } from '../../Types/Game';
 import { Button } from '@material-tailwind/react';
 import Title from '../../Components/Titles/Title';
 import SubTitle from '../../Components/Titles/SubTitle';
 import NewUser from '../../Components/NewUser/NewUser';
 import { DEFAULT_AVATAR } from '../../Constants';
 import NewTeam from '../../Components/NewTeam/NewTeam';
+import TeamDetails from '../../Components/TeamDetails/TeamDetails';
 import { useDispatch } from 'react-redux';
 import { saveGame } from '../../Redux/Slices/Game';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,8 @@ import {
 function NewGame() {
   const [openNewUser, setOpenNewUser] = useState<number>(NaN);
   const [openNewTeam, setOpenNewTeam] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<ITeam | null>(null);
+  const [openTeamDetails, setOpenTeamDetails] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const formik = useFormik<IGame>({
@@ -43,7 +46,6 @@ function NewGame() {
   function submitForm(values: IGame) {
     const valuesOutput = { ...values };
     valuesOutput.teams = [...values.teams, ...generateMissingTeams(values)];
-    console.log('output', valuesOutput);
     dispatch(saveGame(valuesOutput));
     navigate('/game');
   }
@@ -58,8 +60,13 @@ function NewGame() {
         {values.teams.map((team, i) => {
           return (
             <div
-              className=" h-fit p-8 border-solid rounded-lg bg-secondary"
+              className=" h-fit p-8 border-solid rounded-lg bg-secondary cursor-pointer hover:shadow-lg transition-shadow"
               key={team.id}
+              onClick={() => {
+                setSelectedTeam(team);
+                setOpenTeamDetails(true);
+              }}
+              aria-hidden="true"
             >
               <Title>{team.name}</Title>
               <SubTitle>Team members</SubTitle>
@@ -111,6 +118,11 @@ function NewGame() {
         open={openNewTeam}
         onClose={() => setOpenNewTeam(false)}
       ></NewTeam>
+      <TeamDetails
+        team={selectedTeam}
+        open={openTeamDetails}
+        onClose={() => setOpenTeamDetails(false)}
+      />
       <div className="!absolute bottom-16 right-10 flex gap-8">
         {isValid ? (
           <Button
