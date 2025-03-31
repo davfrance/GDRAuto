@@ -2,7 +2,7 @@ import { Button, Input } from '@material-tailwind/react';
 import { FormikProps, useFormik } from 'formik';
 import { useEffect } from 'react';
 import { IGame, ITeam } from '../../Types/Game';
-import { uuidv4 } from '../../Utils';
+import { uuidv4 } from '../../Utils/gameUtils';
 import { Modal } from '@mui/material';
 
 export interface INewTeam {
@@ -20,7 +20,6 @@ function NewTeam({ formik, position, open, onClose }: INewTeam) {
       members: [],
     },
     onSubmit: (values, { resetForm }) => {
-      console.log('team values', position, values);
       formik.setFieldValue(position, values);
       resetForm();
       onClose();
@@ -28,9 +27,7 @@ function NewTeam({ formik, position, open, onClose }: INewTeam) {
     },
   });
   const { handleChange, values, handleSubmit } = formikNewTeam;
-  useEffect(() => {
-    console.log('user', values);
-  }, [values]);
+
   return (
     <Modal open={open} className=" " onClose={onClose}>
       <form

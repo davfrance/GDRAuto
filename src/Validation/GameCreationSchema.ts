@@ -39,13 +39,13 @@ export const memberSchema = yup.object({
     // iconImageUrl: yup.string().required(),
   }),
   stats: statsSchema.required(),
-  prime: yup.number().required(),
 });
 
 const teamSchema = yup.object<ITeam>({
   id: yup.string().required(),
   members: yup.array().of(memberSchema).min(2).required(),
   name: yup.string().required(),
+  prime: yup.number().required(),
 });
 
 export const gameCreationSchema = yup.object<IGame>({

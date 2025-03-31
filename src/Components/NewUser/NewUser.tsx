@@ -2,12 +2,7 @@ import { Button, Input } from '@material-tailwind/react';
 import { FormikProps, useFormik } from 'formik';
 import { useEffect, useState } from 'react';
 import { IGame, IUser } from '../../Types/Game';
-import {
-  addClassStats,
-  getDefaultStats,
-  getUserPrimeNumber,
-  uuidv4,
-} from '../../Utils';
+import { addClassStats, getDefaultStats, uuidv4 } from '../../Utils/gameUtils';
 import { Modal } from '@mui/material';
 import ClassSelectionModal from './ClassSelectionModal';
 import { IClasses, classes } from '../../Constants/classes';
@@ -27,7 +22,6 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
   const formikNewUser = useFormik<IUser>({
     initialValues: {
       id: uuidv4(),
-      prime: NaN,
       name: '',
       gender: '',
       class: undefined,
@@ -56,21 +50,12 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
   const { handleChange, values, handleSubmit } = formikNewUser;
 
   useEffect(() => {
-    formikNewUser.setFieldValue(
-      'prime',
-      getUserPrimeNumber(formik.values.teams)
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formik.values.teams]);
-
-  useEffect(() => {
     const newStats = {
       mana: values.stats.mana,
       attack: values.stats.attack,
       magic: values.stats.magic,
       stamina: values.stats.stamina,
     };
-    console.log('newStats', newStats);
   }, [values.stats]);
 
   const generateStats = () => {

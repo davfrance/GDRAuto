@@ -19,13 +19,13 @@ export interface IUser {
   hp: number;
   class?: IClass;
   stats: IStats;
-  prime: number;
 }
 
 export interface ITeam {
   id: string;
   members: IUser[];
   name: string;
+  prime: number;
 }
 
 export interface IRelation {
@@ -42,6 +42,7 @@ export enum EventTypes {
 }
 export interface IEvent {
   type: EventTypes;
+  teamId: string;
   description: string;
   involvedParties: string[];
   involvedPersons: string[];
@@ -91,13 +92,17 @@ export interface IEventActionObject {
   chance: number;
   action: object | object[]; // Adjust the type based on the actual structure of action
 }
-export type IEventsActions = Record<EventTypes, IEventActionObject>;
+export type IEventsActions = Record<
+  Exclude<
+    EventTypes,
+    EventTypes.RELATION_NEGATIVE | EventTypes.RELATION_POSITIVE
+  >,
+  IEventActionObject
+>;
 export const EventPossibilities: IEventsActions = {
-  [EventTypes.ATTACK]: { chance: 10, action: {} },
+  [EventTypes.ATTACK]: { chance: 15, action: {} },
   [EventTypes.LOOT]: { chance: 15, action: {} },
   [EventTypes.KINGDOMDROP]: { chance: 5, action: {} },
-  [EventTypes.TRAVEL]: { chance: 30, action: {} },
+  [EventTypes.TRAVEL]: { chance: 50, action: {} },
   [EventTypes.ENCOUNTER]: { chance: 15, action: [{}, {}] },
-  [EventTypes.RELATION_POSITIVE]: { chance: 15, action: [{}, {}] },
-  [EventTypes.RELATION_NEGATIVE]: { chance: 10, action: [{}, {}] },
 };

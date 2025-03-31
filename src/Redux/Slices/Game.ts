@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { IGame, ITeam, ITurn } from '../../Types/Game';
+import { IGame, IRelation, ITeam, ITurn } from '../../Types/Game';
 
 export interface CounterState {
   value: number;
@@ -20,6 +20,14 @@ export const GameSlice = createSlice({
   reducers: {
     saveTeams: (state, action: PayloadAction<ITeam[]>) => {
       state.teams = action.payload;
+    },
+    saveTeam: (state, action: PayloadAction<ITeam>) => {
+      const team = action.payload;
+      const existingTeamIndex = state.teams.findIndex(t => t.id === team.id);
+      if (existingTeamIndex !== -1) {
+        state.teams[existingTeamIndex] = team;
+        return;
+      }
     },
     saveGame: (state, action: PayloadAction<IGame>) => {
       return action.payload;
@@ -45,6 +53,9 @@ export const GameSlice = createSlice({
         state.relations[relationKey] = Math.max(0, Math.min(100, 50 + change));
       }
     },
+    updateRelationsMap: (state, action: PayloadAction<IRelation>) => {
+      state.relations = action.payload;
+    },
     reset: () => {
       return initialState;
     },
@@ -52,7 +63,14 @@ export const GameSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const { saveTeams, reset, saveGame, addTurn, updateRelation } =
-  GameSlice.actions;
+export const {
+  saveTeams,
+  reset,
+  saveGame,
+  addTurn,
+  updateRelation,
+  saveTeam,
+  updateRelationsMap,
+} = GameSlice.actions;
 
 export default GameSlice.reducer;

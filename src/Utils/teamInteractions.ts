@@ -1,0 +1,409 @@
+import {
+  EventTypes,
+  IEvent,
+  IGame,
+  IRelation,
+  ITeam,
+  ITurn,
+  ITurnEvent,
+} from '../Types/Game';
+import { getTeamFromId } from './teamsUtils';
+
+enum ChangeTypeEnum {
+  Relative = 'relative',
+  Absolute = 'absolute',
+}
+interface changeRelationValue {
+  changeType: ChangeTypeEnum;
+  value: number;
+}
+type multiTeamEventFunctionsReturn = [IEvent, IEvent, IRelation];
+function getUpdatedTeamRelations(
+  firstTeam: ITeam,
+  secondTeam: ITeam,
+  relationsMap: IRelation,
+  change: changeRelationValue
+): IRelation {
+  const relationKey = findRelationsKey(firstTeam, secondTeam);
+  if (change.changeType == ChangeTypeEnum.Absolute) {
+    relationsMap[relationKey] = change.value;
+  } else {
+    relationsMap[relationKey] = relationsMap[relationKey] - change.value;
+  }
+  return relationsMap;
+}
+
+/**
+ * Creates an encounter between two teams and handles the reciprocal relationship
+ */
+function createTeamEncounter(
+  activeTeam: ITeam,
+  otherTeam: ITeam
+): [IEvent, IEvent] {
+  // Create the encounter event with appropriate description
+  const eventFirstTeam: IEvent = {
+    type: EventTypes.ENCOUNTER,
+    teamId: activeTeam.id,
+    description: `Team ${activeTeam.name} encountered ${otherTeam.name}!`,
+    involvedParties: [activeTeam.id, otherTeam.id],
+    involvedPersons: [
+      ...activeTeam.members.map(member => member.id),
+      ...otherTeam.members.map(member => member.id),
+    ],
+    lootedWeapon: null,
+  };
+  const eventOtherTeam: IEvent = {
+    type: EventTypes.ENCOUNTER,
+    teamId: otherTeam.id,
+    description: `Team ${otherTeam.name} encountered ${activeTeam.name}!`,
+    involvedParties: [otherTeam.id, activeTeam.id],
+    involvedPersons: [
+      ...otherTeam.members.map(member => member.id),
+      ...activeTeam.members.map(member => member.id),
+    ],
+    lootedWeapon: null,
+  };
+
+  return [eventFirstTeam, eventOtherTeam];
+}
+
+/**
+ * Creates a relation event (positive or negative) between two teams
+ */
+function createTeamRelationEvent(
+  activeTeam: ITeam,
+  otherTeam: ITeam,
+  relationType: EventTypes.RELATION_POSITIVE | EventTypes.RELATION_NEGATIVE,
+  relationsMap: IRelation
+): multiTeamEventFunctionsReturn {
+  // Create description based on relation type
+  const descriptionFirstTeam =
+    relationType === EventTypes.RELATION_POSITIVE
+      ? `Team ${activeTeam.name} improved relations with ${otherTeam.name}.`
+      : `Team ${activeTeam.name} worsened relations with ${otherTeam.name}.`;
+  const descriptionSecondTeam =
+    relationType === EventTypes.RELATION_POSITIVE
+      ? `Team ${otherTeam.name} improved relations with ${activeTeam.name}.`
+      : `Team ${otherTeam.name} worsened relations with ${activeTeam.name}.`;
+
+  // Create the relation event
+  const eventFirstTeam: IEvent = {
+    type: relationType,
+    teamId: activeTeam.id,
+    description: descriptionFirstTeam,
+    involvedParties: [activeTeam.id, otherTeam.id],
+    involvedPersons: [
+      ...activeTeam.members.map(member => member.id),
+      ...otherTeam.members.map(member => member.id),
+    ],
+    lootedWeapon: null,
+  };
+  const eventSecondTeam: IEvent = {
+    type: relationType,
+    teamId: otherTeam.id,
+    description: descriptionSecondTeam,
+    involvedParties: [activeTeam.id, otherTeam.id],
+    involvedPersons: [
+      ...otherTeam.members.map(member => member.id),
+      ...activeTeam.members.map(member => member.id),
+    ],
+    lootedWeapon: null,
+  };
+
+  const value = relationType === EventTypes.RELATION_POSITIVE ? 10 : -10;
+  const newRelationsMap = getUpdatedTeamRelations(
+    activeTeam,
+    otherTeam,
+    relationsMap,
+    {
+      changeType: ChangeTypeEnum.Relative,
+      value,
+    }
+  );
+
+  return [eventFirstTeam, eventSecondTeam, newRelationsMap];
+}
+
+/**
+ * Creates an attack event between two teams
+ */
+function createTeamAttackEvent(
+  activeTeam: ITeam,
+  otherTeam: ITeam,
+  relationsMap: IRelation
+): multiTeamEventFunctionsReturn {
+  // Create the attack event
+  const eventFirstTeam: IEvent = {
+    type: EventTypes.ATTACK,
+    teamId: activeTeam.id,
+    description: `Team ${activeTeam.name} attacked members of the ${otherTeam.name} team!`,
+    involvedParties: [activeTeam.id, otherTeam.id],
+    involvedPersons: [
+      ...activeTeam.members.map(member => member.id),
+      ...otherTeam.members.map(member => member.id),
+    ],
+    lootedWeapon: null,
+  };
+  const eventSecondTeam: IEvent = {
+    type: EventTypes.ATTACK,
+    teamId: otherTeam.id,
+    description: `Team ${otherTeam.name} attacked members of the ${otherTeam.name} team!`,
+    involvedParties: [otherTeam.id, activeTeam.id],
+    involvedPersons: [
+      ...otherTeam.members.map(member => member.id),
+      ...activeTeam.members.map(member => member.id),
+    ],
+    lootedWeapon: null,
+  };
+  const newRelationsMap = getUpdatedTeamRelations(
+    activeTeam,
+    otherTeam,
+    relationsMap,
+    {
+      changeType: ChangeTypeEnum.Absolute,
+      value: 0,
+    }
+  );
+
+  return [eventFirstTeam, eventSecondTeam, newRelationsMap];
+}
+
+/**
+ * Determines if two teams can interact based on their encounter history
+ */
+function canTeamsInteract(
+  team1Id: string,
+  team2Id: string,
+  lastTurn: ITurn | null
+): boolean {
+  if (!lastTurn) return false;
+
+  // Check if team1 had an encounter with team2 in the previous turn
+  const team1EncounteredTeam2 = lastTurn.events.some(
+    event =>
+      event.teamId === team1Id &&
+      event.type === EventTypes.ENCOUNTER &&
+      event.involvedParties.includes(team2Id)
+  );
+
+  // Check if team2 had an encounter with team1 in the previous turn
+  const team2EncounteredTeam1 = lastTurn.events.some(
+    event =>
+      event.teamId === team2Id &&
+      event.type === EventTypes.ENCOUNTER &&
+      event.involvedParties.includes(team1Id)
+  );
+
+  // Teams can interact if they both encountered each other
+  return team1EncounteredTeam2 && team2EncounteredTeam1;
+}
+
+/**
+ * Finds a team that the active team can encounter in the current turn
+ */
+function findTeamToEncounter(
+  activeTeam: ITeam,
+  gameState: IGame,
+  currentTurnEvents: ITurnEvent[],
+  lastTurn: ITurn | null
+): string | null {
+  if (currentTurnEvents.length > 0) {
+    // Get all team IDs that have already had actions in the current turn
+    const processedTeamIds = [
+      ...new Set(currentTurnEvents.map(event => event.teamId)),
+    ];
+    // Get all team IDs from the game state
+    const allTeamIds = gameState.teams.map(team => team.id);
+    // Find teams that haven't had actions yet (excluding the current team)
+    const availableTeamIds = allTeamIds.filter(
+      id =>
+        !processedTeamIds.includes(id) &&
+        id !== activeTeam.id &&
+        !isTeamInBlockingAction(id, currentTurnEvents)
+    );
+
+    if (availableTeamIds.length > 0) {
+      // Randomly select one of the available teams
+      return availableTeamIds[
+        Math.floor(Math.random() * availableTeamIds.length)
+      ];
+    }
+
+    // If all teams have had actions, fall back to selecting from processed teams
+    const otherTeamIds = processedTeamIds.filter(id => id !== activeTeam.id);
+    if (otherTeamIds.length > 0) {
+      // Randomly select one of the other teams
+      return otherTeamIds[Math.floor(Math.random() * otherTeamIds.length)];
+    }
+  }
+
+  // If no teams in current turn, fall back to last turn logic
+  if (lastTurn) {
+    // Get all team IDs from the last turn
+    const allTeamIds = [...new Set(lastTurn.events.map(event => event.teamId))];
+    // Filter out the current team
+    const otherTeamIds = allTeamIds.filter(id => id !== activeTeam.id);
+
+    if (otherTeamIds.length > 0) {
+      // Randomly select one of the other teams
+      return otherTeamIds[Math.floor(Math.random() * otherTeamIds.length)];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Finds a team that the active team previously encountered and can now interact with
+ */
+function findPreviouslyEncounteredTeam(
+  activeTeam: ITeam,
+  lastTurn: ITurn | null
+): string | null {
+  if (!lastTurn) return null;
+
+  // Find if this team had an encounter in the previous turn
+  const previousTeamEvent = lastTurn.events.find(
+    event =>
+      event.teamId === activeTeam.id && event.type === EventTypes.ENCOUNTER
+  );
+
+  // If team had an encounter, check if it involved another team
+  if (previousTeamEvent && previousTeamEvent.involvedParties.length > 1) {
+    // Find the other team involved (not the current team)
+    const encounteredTeamId =
+      previousTeamEvent.involvedParties.find(
+        partyId => partyId !== activeTeam.id
+      ) || null;
+
+    // If there was an encounter with another team, check if it's valid for interaction
+    if (encounteredTeamId) {
+      // Check if the other team also had an encounter with this team
+      const previousEncounteredTeamEvent = lastTurn.events.find(
+        event =>
+          event.teamId === encounteredTeamId &&
+          event.type === EventTypes.ENCOUNTER &&
+          event.involvedParties.includes(activeTeam.id)
+      );
+
+      // Only return the team ID if both teams had an encounter with each other
+      if (previousEncounteredTeamEvent) {
+        return encounteredTeamId;
+      }
+    }
+  }
+
+  return null;
+}
+function findRelationsKey(firstTeam: ITeam, secondTeam: ITeam): number {
+  const firstTeamPrime = firstTeam.prime;
+  const secondTeamPrime = secondTeam.prime;
+  return firstTeamPrime * secondTeamPrime;
+}
+function getTeamsRelation(
+  firstTeam: ITeam,
+  secondTeam: ITeam,
+  relationsMap: IRelation
+) {
+  const relationKey = findRelationsKey(firstTeam, secondTeam);
+  return relationsMap[relationKey];
+}
+
+/**
+ * Checks if a team is already involved in a blocking action in the current turn events
+ */
+export function isTeamInBlockingAction(
+  teamId: string,
+  currentTurnEvents: ITurnEvent[]
+): boolean {
+  if (!currentTurnEvents || currentTurnEvents.length === 0) return false;
+
+  // Check if the team already has an event in the current turn
+  const teamEvent = currentTurnEvents.find(event => event.teamId === teamId);
+  if (!teamEvent) return false;
+
+  // Check if the team is involved in any blocking action EXCEPT encounters
+  // This allows teams to have reciprocal encounters
+  const blockingActions = [
+    EventTypes.ENCOUNTER,
+    EventTypes.RELATION_POSITIVE,
+    EventTypes.RELATION_NEGATIVE,
+    EventTypes.ATTACK,
+  ];
+  return blockingActions.includes(teamEvent.type);
+}
+
+export function createMultiTeamEvent(
+  firstTeam: ITeam,
+  lastTurn: ITurn | null,
+  currentTurn: ITurn,
+  gameState: IGame
+): multiTeamEventFunctionsReturn {
+  // const newEvent:IEvent = null
+
+  const secondTeamId = findPreviouslyEncounteredTeam(firstTeam, lastTurn);
+  if (!secondTeamId) {
+    const secondTeamId = findTeamToEncounter(
+      firstTeam,
+      gameState,
+      currentTurn.events,
+      lastTurn
+    );
+    if (!secondTeamId) {
+      throw new Error('first error with teamid');
+    }
+    const secondTeam = getTeamFromId(secondTeamId, gameState);
+    console.log('secondTeam', secondTeam);
+    if (!secondTeam) {
+      throw new Error('first error with team');
+    }
+    console.log("secondTeamId dentro ", secondTeamId)
+  
+      return [
+        ...createTeamEncounter(firstTeam, secondTeam),
+        gameState.relations,
+      ];
+   
+  }
+  if (!secondTeamId) {
+    throw new Error('second error with team id');
+  }
+  const secondTeam = getTeamFromId(secondTeamId, gameState);
+  if (!canTeamsInteract(firstTeam.id, secondTeamId, lastTurn)) {
+    throw new Error('teams cant interact');
+  }
+  if (!secondTeam) {
+    throw new Error('second error with team');
+  }
+  const teamRelations = getTeamsRelation(
+    firstTeam,
+    secondTeam,
+    gameState.relations
+  );
+  let randomNum = Math.floor(Math.random() * 100);
+  if (randomNum < teamRelations) {
+    // allowedActions = [
+    //   EventTypes.RELATION_NEGATIVE,
+    //   EventTypes.RELATION_POSITIVE,
+    // ];
+    let relationsEventDecider = Math.floor(Math.random() * 100);
+    if (relationsEventDecider < teamRelations) {
+      createTeamRelationEvent(
+        firstTeam,
+        secondTeam,
+        EventTypes.RELATION_POSITIVE,
+        gameState.relations
+      );
+    }
+    createTeamRelationEvent(
+      firstTeam,
+      secondTeam,
+      EventTypes.RELATION_NEGATIVE,
+      gameState.relations
+    );
+  } else {
+    return createTeamAttackEvent(firstTeam, secondTeam, gameState.relations);
+  }
+
+  throw new Error('Should have not reached here');
+}
