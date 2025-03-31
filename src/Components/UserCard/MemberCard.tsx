@@ -9,7 +9,6 @@ interface UserCardProps {
 
 const MemberCard = ({ member }: UserCardProps) => {
   /*   const [open, setOpen] = useState(false); */
-  console.log(member, 'member');
   const memberDetails = () => {
     return (
       <div className="p-3 bg-white rounded-md shadow-lg border border-gray-200 w-64 text-black">
@@ -77,7 +76,7 @@ const MemberCard = ({ member }: UserCardProps) => {
       key={member.id}
       content={memberDetails()}
       placement="right"
-      className="z-50"
+      className="z-50 bg-transparent p-0 border border-gray-200"
       interactive={true}
       dimiss={{
         outsidePress: true,

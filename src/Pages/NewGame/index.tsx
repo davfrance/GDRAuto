@@ -17,7 +17,7 @@ import {
   generateRelationsMap,
   getUserPrimeNumber,
   uuidv4,
-} from '../../Utils';
+} from '../../Utils/gameUtils';
 
 function NewGame() {
   const [openNewUser, setOpenNewUser] = useState<number>(NaN);
@@ -50,9 +50,7 @@ function NewGame() {
     dispatch(saveGame(valuesOutput));
     navigate('/game');
   }
-  const { values, isValid, errors } = formik;
-  console.error('errors', errors);
-  console.log('values', values);
+  const { values, isValid } = formik;
   useEffect(() => {
     formik.setFieldValue('prime', getUserPrimeNumber(formik.values.teams));
     formik.setFieldValue(

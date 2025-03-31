@@ -2,7 +2,7 @@ import { Button, Input } from '@material-tailwind/react';
 import { FormikProps, useFormik } from 'formik';
 import { useEffect, useState } from 'react';
 import { IGame, IUser } from '../../Types/Game';
-import { addClassStats, getDefaultStats, uuidv4 } from '../../Utils';
+import { addClassStats, getDefaultStats, uuidv4 } from '../../Utils/gameUtils';
 import { Modal } from '@mui/material';
 import ClassSelectionModal from './ClassSelectionModal';
 import { IClasses, classes } from '../../Constants/classes';
@@ -56,7 +56,6 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
       magic: values.stats.magic,
       stamina: values.stats.stamina,
     };
-    console.log('newStats', newStats);
   }, [values.stats]);
 
   const generateStats = () => {

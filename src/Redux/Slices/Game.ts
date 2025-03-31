@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { IGame, ITeam, ITurn } from '../../Types/Game';
+import { IGame, IRelation, ITeam, ITurn } from '../../Types/Game';
 
 export interface CounterState {
   value: number;
@@ -53,6 +53,9 @@ export const GameSlice = createSlice({
         state.relations[relationKey] = Math.max(0, Math.min(100, 50 + change));
       }
     },
+    updateRelationsMap: (state, action: PayloadAction<IRelation>) => {
+      state.relations = action.payload;
+    },
     reset: () => {
       return initialState;
     },
@@ -60,7 +63,14 @@ export const GameSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const { saveTeams, reset, saveGame, addTurn, updateRelation, saveTeam } =
-  GameSlice.actions;
+export const {
+  saveTeams,
+  reset,
+  saveGame,
+  addTurn,
+  updateRelation,
+  saveTeam,
+  updateRelationsMap,
+} = GameSlice.actions;
 
 export default GameSlice.reducer;

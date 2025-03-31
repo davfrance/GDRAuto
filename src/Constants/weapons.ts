@@ -1,5 +1,5 @@
 import { IWeapon, WeaponRarity, WeaponType } from '../Types/Weapons';
-import { uuidv4 } from '../Utils';
+import { uuidv4 } from '../Utils/gameUtils';
 
 // Sample weapons data - this is a basic layout that can be expanded later
 export const WEAPONS: IWeapon[] = [
