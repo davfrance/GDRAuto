@@ -237,7 +237,8 @@ export function getAction(
   lastTurn: ITurn | null,
   currentTurn: ITurn,
   gameState: IGame,
-  dispatch: Dispatch
+  dispatch: Dispatch,
+  i: number
 ): IEvent | IEvent[] | null {
   // Check if the team is already involved in a blocking action
   if (isTeamInBlockingAction(team.id, currentTurn.events)) {
@@ -252,8 +253,14 @@ export function getAction(
     lootedWeapon: null,
   };
   if (lastTurn) {
-    let tryMultiTeamEvent = Math.floor(Math.random() * 10);
-    if (tryMultiTeamEvent < 2) {
+    const tryMultiTeamEvent = Math.floor(Math.random() * 10);
+    const teamLastTurnEvent = lastTurn.events.find(
+      event => event.teamId === team.id
+    );
+    if (
+      tryMultiTeamEvent < 1 ||
+      teamLastTurnEvent?.type === EventTypes.ENCOUNTER
+    ) {
       try {
         const [firstTeamEvent, secondTeamEvent, newRelationsMap] =
           createMultiTeamEvent(team, lastTurn, currentTurn, gameState);

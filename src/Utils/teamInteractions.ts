@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import {
   EventTypes,
   IEvent,
@@ -18,6 +19,13 @@ interface changeRelationValue {
   value: number;
 }
 type multiTeamEventFunctionsReturn = [IEvent, IEvent, IRelation];
+
+function findRelationsKey(firstTeam: ITeam, secondTeam: ITeam): number {
+  const firstTeamPrime = firstTeam.prime;
+  const secondTeamPrime = secondTeam.prime;
+  return firstTeamPrime * secondTeamPrime;
+}
+
 function getUpdatedTeamRelations(
   firstTeam: ITeam,
   secondTeam: ITeam,
@@ -28,7 +36,7 @@ function getUpdatedTeamRelations(
   if (change.changeType == ChangeTypeEnum.Absolute) {
     relationsMap[relationKey] = change.value;
   } else {
-    relationsMap[relationKey] = relationsMap[relationKey] - change.value;
+    relationsMap[relationKey] = relationsMap[relationKey] + change.value;
   }
   return relationsMap;
 }
@@ -169,6 +177,29 @@ function createTeamAttackEvent(
 }
 
 /**
+ * Checks if a team is already involved in a blocking action in the current turn events
+ */
+export function isTeamInBlockingAction(
+  teamId: string,
+  currentTurnEvents: ITurnEvent[]
+): boolean {
+  if (!currentTurnEvents || currentTurnEvents.length === 0) return false;
+
+  // Check if the team already has an event in the current turn
+  const teamEvent = currentTurnEvents.find(event => event.teamId === teamId);
+  if (!teamEvent) return false;
+
+  // Check if the team is involved in any blocking action EXCEPT encounters
+  // This allows teams to have reciprocal encounters
+  const blockingActions = [
+    EventTypes.ENCOUNTER,
+    EventTypes.RELATION_POSITIVE,
+    EventTypes.RELATION_NEGATIVE,
+    EventTypes.ATTACK,
+  ];
+  return blockingActions.includes(teamEvent.type);
+}
+/**
  * Determines if two teams can interact based on their encounter history
  */
 function canTeamsInteract(
@@ -207,47 +238,20 @@ function findTeamToEncounter(
   currentTurnEvents: ITurnEvent[],
   lastTurn: ITurn | null
 ): string | null {
-  if (currentTurnEvents.length > 0) {
-    // Get all team IDs that have already had actions in the current turn
-    const processedTeamIds = [
-      ...new Set(currentTurnEvents.map(event => event.teamId)),
-    ];
-    // Get all team IDs from the game state
-    const allTeamIds = gameState.teams.map(team => team.id);
-    // Find teams that haven't had actions yet (excluding the current team)
-    const availableTeamIds = allTeamIds.filter(
-      id =>
-        !processedTeamIds.includes(id) &&
-        id !== activeTeam.id &&
-        !isTeamInBlockingAction(id, currentTurnEvents)
-    );
-
-    if (availableTeamIds.length > 0) {
-      // Randomly select one of the available teams
-      return availableTeamIds[
-        Math.floor(Math.random() * availableTeamIds.length)
-      ];
-    }
-
-    // If all teams have had actions, fall back to selecting from processed teams
-    const otherTeamIds = processedTeamIds.filter(id => id !== activeTeam.id);
-    if (otherTeamIds.length > 0) {
-      // Randomly select one of the other teams
-      return otherTeamIds[Math.floor(Math.random() * otherTeamIds.length)];
-    }
-  }
-
-  // If no teams in current turn, fall back to last turn logic
-  if (lastTurn) {
-    // Get all team IDs from the last turn
-    const allTeamIds = [...new Set(lastTurn.events.map(event => event.teamId))];
-    // Filter out the current team
-    const otherTeamIds = allTeamIds.filter(id => id !== activeTeam.id);
-
-    if (otherTeamIds.length > 0) {
-      // Randomly select one of the other teams
-      return otherTeamIds[Math.floor(Math.random() * otherTeamIds.length)];
-    }
+  // Get all team IDs from the game state
+  const allTeamIds = gameState.teams.map(team => team.id);
+  // Find teams that haven't had actions yet (excluding the current team)
+  const availableTeamIds = allTeamIds.filter(
+    id => id !== activeTeam.id && !isTeamInBlockingAction(id, currentTurnEvents)
+  );
+  // Sort available team IDs alphabetically for consistent ordering
+  availableTeamIds.sort((a, b) => a.localeCompare(b));
+  if (availableTeamIds.length > 0) {
+    // Randomly select one of the available teams
+    console.log('availableTeamIds', availableTeamIds);
+    const selectedIndex = Math.floor(Math.random() * availableTeamIds.length);
+    console.log('availableTeamIds selectedIndex', selectedIndex);
+    return availableTeamIds[selectedIndex];
   }
 
   return null;
@@ -295,11 +299,7 @@ function findPreviouslyEncounteredTeam(
 
   return null;
 }
-function findRelationsKey(firstTeam: ITeam, secondTeam: ITeam): number {
-  const firstTeamPrime = firstTeam.prime;
-  const secondTeamPrime = secondTeam.prime;
-  return firstTeamPrime * secondTeamPrime;
-}
+
 function getTeamsRelation(
   firstTeam: ITeam,
   secondTeam: ITeam,
@@ -309,38 +309,13 @@ function getTeamsRelation(
   return relationsMap[relationKey];
 }
 
-/**
- * Checks if a team is already involved in a blocking action in the current turn events
- */
-export function isTeamInBlockingAction(
-  teamId: string,
-  currentTurnEvents: ITurnEvent[]
-): boolean {
-  if (!currentTurnEvents || currentTurnEvents.length === 0) return false;
-
-  // Check if the team already has an event in the current turn
-  const teamEvent = currentTurnEvents.find(event => event.teamId === teamId);
-  if (!teamEvent) return false;
-
-  // Check if the team is involved in any blocking action EXCEPT encounters
-  // This allows teams to have reciprocal encounters
-  const blockingActions = [
-    EventTypes.ENCOUNTER,
-    EventTypes.RELATION_POSITIVE,
-    EventTypes.RELATION_NEGATIVE,
-    EventTypes.ATTACK,
-  ];
-  return blockingActions.includes(teamEvent.type);
-}
-
 export function createMultiTeamEvent(
   firstTeam: ITeam,
   lastTurn: ITurn | null,
   currentTurn: ITurn,
-  gameState: IGame
+  gameStateRel: IGame
 ): multiTeamEventFunctionsReturn {
-  // const newEvent:IEvent = null
-
+  const gameState = _.cloneDeep(gameStateRel);
   const secondTeamId = findPreviouslyEncounteredTeam(firstTeam, lastTurn);
   if (!secondTeamId) {
     const secondTeamId = findTeamToEncounter(
@@ -349,6 +324,7 @@ export function createMultiTeamEvent(
       currentTurn.events,
       lastTurn
     );
+    console.log('secondTeamId fuera ', secondTeamId);
     if (!secondTeamId) {
       throw new Error('first error with teamid');
     }
@@ -357,13 +333,9 @@ export function createMultiTeamEvent(
     if (!secondTeam) {
       throw new Error('first error with team');
     }
-    console.log("secondTeamId dentro ", secondTeamId)
-  
-      return [
-        ...createTeamEncounter(firstTeam, secondTeam),
-        gameState.relations,
-      ];
-   
+    console.log('secondTeamId dentro ', secondTeamId);
+
+    return [...createTeamEncounter(firstTeam, secondTeam), gameState.relations];
   }
   if (!secondTeamId) {
     throw new Error('second error with team id');
@@ -380,22 +352,18 @@ export function createMultiTeamEvent(
     secondTeam,
     gameState.relations
   );
-  let randomNum = Math.floor(Math.random() * 100);
+  const randomNum = Math.floor(Math.random() * 100);
   if (randomNum < teamRelations) {
-    // allowedActions = [
-    //   EventTypes.RELATION_NEGATIVE,
-    //   EventTypes.RELATION_POSITIVE,
-    // ];
-    let relationsEventDecider = Math.floor(Math.random() * 100);
+    const relationsEventDecider = Math.floor(Math.random() * 100);
     if (relationsEventDecider < teamRelations) {
-      createTeamRelationEvent(
+      return createTeamRelationEvent(
         firstTeam,
         secondTeam,
         EventTypes.RELATION_POSITIVE,
         gameState.relations
       );
     }
-    createTeamRelationEvent(
+    return createTeamRelationEvent(
       firstTeam,
       secondTeam,
       EventTypes.RELATION_NEGATIVE,

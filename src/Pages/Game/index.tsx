@@ -40,7 +40,7 @@ function Game() {
     const teamsNoPointer = [...gameState.teams];
 
     // Process each team to generate their actions
-    teamsNoPointer.forEach(team => {
+    teamsNoPointer.forEach((team, i) => {
       // Generate one action per team instead of per member
       // Pass the current turn events being generated to check for existing encounters
       const doesTeamHaveEvent = currentTurn.events.find(event => {
@@ -52,7 +52,8 @@ function Game() {
         lastTurn,
         currentTurn,
         gameState,
-        dispatch
+        dispatch,
+        i
       );
       if (!teamAction) {
         return;
@@ -71,7 +72,15 @@ function Game() {
               involvedPersons: event.involvedPersons,
             };
             // Add the event to the new turn
+            console.log('currentTurn before', currentTurn);
+            currentTurn.events = currentTurn.events.filter(e => {
+              return e.teamId !== event.teamId;
+            });
+
+            console.log('currentTurn after filter', currentTurn);
             currentTurn.events.push(turnEvent);
+
+            console.log('currentTurn after push', currentTurn);
           });
         });
       } else {
@@ -209,152 +218,160 @@ function Game() {
                     gameState.history[gameState.history.length - 1]?.events ||
                       []
                   )
-                ).map(([teamId, events]) => {
-                  const team = gameState.teams.find(
-                    t => t.id === teamId
-                  ) as ITeam;
-                  const teamAction = getUniqueTeamAction(events);
-                  const memberWithLoot = getMemberWithLootedWeapon(
-                    events,
-                    team
-                  );
-                  if (!teamAction) return null;
+                )
+                  .sort(([teamIdA], [teamIdB]) => {
+                    // Sort by team ID to ensure consistent ordering
+                    return teamIdA.localeCompare(teamIdB);
+                  })
+                  .map(([teamId, events]) => {
+                    const team = gameState.teams.find(
+                      t => t.id === teamId
+                    ) as ITeam;
+                    const teamAction = getUniqueTeamAction(events);
+                    const memberWithLoot = getMemberWithLootedWeapon(
+                      events,
+                      team
+                    );
+                    if (!teamAction) return null;
 
-                  // Only show interactions when a second team is involved or for special events like loot
-                  const shouldShowEvent =
-                    teamAction.involvedParties?.length > 0 ||
-                    teamAction.type === EventTypes.LOOT ||
-                    teamAction.type === EventTypes.KINGDOMDROP;
+                    // Only show interactions when a second team is involved or for special events like loot
+                    const shouldShowEvent =
+                      teamAction.involvedParties?.length > 0 ||
+                      teamAction.type === EventTypes.LOOT ||
+                      teamAction.type === EventTypes.KINGDOMDROP;
 
-                  if (!shouldShowEvent) return null;
+                    if (!shouldShowEvent) return null;
 
-                  return (
-                    <div
-                      key={teamId}
-                      className="mb-6 border-l-4 border-indigo-500 pl-4 pb-2"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setSelectedTeamPrime(team.prime);
-                      }}
-                      aria-hidden="true"
-                    >
-                      <div className="border rounded-md p-4 bg-gray-50 shadow-sm flex">
-                        <div className="flex-grow">
-                          <p className="mb-2 text-lg">
-                            {teamAction.description}
-                          </p>
-                          <p className="text-sm text-gray-600 mb-3">
-                            {teamAction.type}
-                          </p>
-
-                          {/* Display involved teams with more prominence */}
-                          {teamAction.involvedParties &&
-                            teamAction.involvedParties.length > 0 &&
-                            // First check if there are any teams to display after filtering
-                            teamAction.involvedParties
-                              .filter(partyId => partyId !== teamId)
-                              .some(partyId =>
-                                gameState.teams.some(t => t.id === partyId)
-                              ) && (
-                              <div className="mb-3 p-2 bg-indigo-50 rounded border border-indigo-200">
-                                <p className="font-medium text-indigo-700">
-                                  Interacting with:{' '}
-                                  <span className="font-bold">
-                                    {teamAction.involvedParties
-                                      .map(partyId => {
-                                        // Only show other teams, not the current team
-                                        if (partyId === teamId) return null;
-                                        const involvedTeam =
-                                          gameState.teams.find(
-                                            t => t.id === partyId
-                                          );
-                                        return involvedTeam
-                                          ? involvedTeam.name
-                                          : '';
-                                      })
-                                      .filter(Boolean)
-                                      .join(', ')}
-                                  </span>
-                                </p>
-                              </div>
-                            )}
-
-                          {/* Display looted weapon if applicable */}
-                          {(teamAction.type === EventTypes.LOOT ||
-                            teamAction.type === EventTypes.KINGDOMDROP) &&
-                            teamAction.action.lootedWeapon && (
-                              <div className="mt-3 p-3 bg-white rounded-md border border-gray-200">
-                                <p className="font-medium mb-2">Loot Found:</p>
-                                <div className="flex items-center">
-                                  <WeaponCard
-                                    weapon={teamAction.action.lootedWeapon}
-                                  ></WeaponCard>
-                                </div>
-
-                                {/* Show which team member gets the weapon */}
-                                {memberWithLoot && (
-                                  <div className="mt-2 flex items-center">
-                                    <p className="text-sm">
-                                      <span className="font-medium">
-                                        Assigned to:
-                                      </span>{' '}
-                                      {
-                                        team?.members.find(
-                                          m => m.id === memberWithLoot.memberId
-                                        )?.name
-                                      }
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                        </div>
-
-                        {/* Team members section on the right side */}
-                        <div className="ml-4 border-l pl-4 flex flex-col justify-center min-w-[180px]">
-                          <h4 className="text-xs font-semibold mb-2 text-gray-700">
-                            Team Members:
-                          </h4>
-                          <div className="flex flex-col gap-2">
-                            {team?.members.map(member => {
-                              return (
-                                <MemberCard
-                                  member={member}
-                                  key={member.id}
-                                ></MemberCard>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Only display team members for loot events to show who received the item */}
-                      {(teamAction.type === EventTypes.LOOT ||
-                        teamAction.type === EventTypes.KINGDOMDROP) &&
-                        teamAction.action.lootedWeapon &&
-                        memberWithLoot && (
-                          <div className="mt-3">
-                            <p className="text-sm font-medium mb-2">
-                              Received by:
+                    return (
+                      <div
+                        key={teamId}
+                        className="mb-6 border-l-4 border-indigo-500 pl-4 pb-2"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedTeamPrime(team.prime);
+                        }}
+                        aria-hidden="true"
+                      >
+                        <div className="border rounded-md p-4 bg-gray-50 shadow-sm flex">
+                          <div className="flex-grow">
+                            <p className="mb-2 text-lg">
+                              {teamAction.description}
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                              {team?.members
-                                .filter(
-                                  member =>
-                                    member.id === memberWithLoot.memberId
-                                )
-                                .map(member => (
+                            <p className="text-sm text-gray-600 mb-3">
+                              {teamAction.type}
+                            </p>
+
+                            {/* Display involved teams with more prominence */}
+                            {teamAction.involvedParties &&
+                              teamAction.involvedParties.length > 0 &&
+                              // First check if there are any teams to display after filtering
+                              teamAction.involvedParties
+                                .filter(partyId => partyId !== teamId)
+                                .some(partyId =>
+                                  gameState.teams.some(t => t.id === partyId)
+                                ) && (
+                                <div className="mb-3 p-2 bg-indigo-50 rounded border border-indigo-200">
+                                  <p className="font-medium text-indigo-700">
+                                    Interacting with:{' '}
+                                    <span className="font-bold">
+                                      {teamAction.involvedParties
+                                        .map(partyId => {
+                                          // Only show other teams, not the current team
+                                          if (partyId === teamId) return null;
+                                          const involvedTeam =
+                                            gameState.teams.find(
+                                              t => t.id === partyId
+                                            );
+                                          return involvedTeam
+                                            ? involvedTeam.name
+                                            : '';
+                                        })
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                    </span>
+                                  </p>
+                                </div>
+                              )}
+
+                            {/* Display looted weapon if applicable */}
+                            {(teamAction.type === EventTypes.LOOT ||
+                              teamAction.type === EventTypes.KINGDOMDROP) &&
+                              teamAction.action.lootedWeapon && (
+                                <div className="mt-3 p-3 bg-white rounded-md border border-gray-200">
+                                  <p className="font-medium mb-2">
+                                    Loot Found:
+                                  </p>
+                                  <div className="flex items-center">
+                                    <WeaponCard
+                                      weapon={teamAction.action.lootedWeapon}
+                                    ></WeaponCard>
+                                  </div>
+
+                                  {/* Show which team member gets the weapon */}
+                                  {memberWithLoot && (
+                                    <div className="mt-2 flex items-center">
+                                      <p className="text-sm">
+                                        <span className="font-medium">
+                                          Assigned to:
+                                        </span>{' '}
+                                        {
+                                          team?.members.find(
+                                            m =>
+                                              m.id === memberWithLoot.memberId
+                                          )?.name
+                                        }
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                          </div>
+
+                          {/* Team members section on the right side */}
+                          <div className="ml-4 border-l pl-4 flex flex-col justify-center min-w-[180px]">
+                            <h4 className="text-xs font-semibold mb-2 text-gray-700">
+                              Team Members:
+                            </h4>
+                            <div className="flex flex-col gap-2">
+                              {team?.members.map(member => {
+                                return (
                                   <MemberCard
                                     member={member}
                                     key={member.id}
                                   ></MemberCard>
-                                ))}
+                                );
+                              })}
                             </div>
                           </div>
-                        )}
-                    </div>
-                  );
-                })}
+                        </div>
+
+                        {/* Only display team members for loot events to show who received the item */}
+                        {(teamAction.type === EventTypes.LOOT ||
+                          teamAction.type === EventTypes.KINGDOMDROP) &&
+                          teamAction.action.lootedWeapon &&
+                          memberWithLoot && (
+                            <div className="mt-3">
+                              <p className="text-sm font-medium mb-2">
+                                Received by:
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {team?.members
+                                  .filter(
+                                    member =>
+                                      member.id === memberWithLoot.memberId
+                                  )
+                                  .map(member => (
+                                    <MemberCard
+                                      member={member}
+                                      key={member.id}
+                                    ></MemberCard>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })}
               </div>
               {selectedTeamPrime ? (
                 <div className="w-1/3 pl-6 border-l">
