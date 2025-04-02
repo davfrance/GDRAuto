@@ -42,37 +42,39 @@ function getUpdatedTeamRelations(
 }
 
 /**
- * Creates an encounter between two teams and handles the reciprocal relationship
+ * Creates an encounter event between two teams
  */
 function createTeamEncounter(
-  activeTeam: ITeam,
-  otherTeam: ITeam
+  firstTeam: ITeam,
+  secondTeam: ITeam
 ): [IEvent, IEvent] {
-  // Create the encounter event with appropriate description
+  // Changed description
+  const descriptionFirstTeam = `Encountered members of the ${secondTeam.name} team.`;
+  const descriptionSecondTeam = `Encountered members of the ${firstTeam.name} team.`;
+
   const eventFirstTeam: IEvent = {
     type: EventTypes.ENCOUNTER,
-    teamId: activeTeam.id,
-    description: `Team ${activeTeam.name} encountered ${otherTeam.name}!`,
-    involvedParties: [activeTeam.id, otherTeam.id],
+    teamId: firstTeam.id,
+    description: descriptionFirstTeam,
+    involvedParties: [firstTeam.id, secondTeam.id],
     involvedPersons: [
-      ...activeTeam.members.map(member => member.id),
-      ...otherTeam.members.map(member => member.id),
+      ...firstTeam.members.map(member => member.id),
+      ...secondTeam.members.map(member => member.id),
     ],
     lootedWeapon: null,
   };
-  const eventOtherTeam: IEvent = {
+  const eventSecondTeam: IEvent = {
     type: EventTypes.ENCOUNTER,
-    teamId: otherTeam.id,
-    description: `Team ${otherTeam.name} encountered ${activeTeam.name}!`,
-    involvedParties: [otherTeam.id, activeTeam.id],
+    teamId: secondTeam.id,
+    description: descriptionSecondTeam,
+    involvedParties: [secondTeam.id, firstTeam.id],
     involvedPersons: [
-      ...otherTeam.members.map(member => member.id),
-      ...activeTeam.members.map(member => member.id),
+      ...secondTeam.members.map(member => member.id),
+      ...firstTeam.members.map(member => member.id),
     ],
     lootedWeapon: null,
   };
-
-  return [eventFirstTeam, eventOtherTeam];
+  return [eventFirstTeam, eventSecondTeam];
 }
 
 /**
@@ -84,15 +86,15 @@ function createTeamRelationEvent(
   relationType: EventTypes.RELATION_POSITIVE | EventTypes.RELATION_NEGATIVE,
   relationsMap: IRelation
 ): multiTeamEventFunctionsReturn {
-  // Create description based on relation type
+  // Changed descriptions
   const descriptionFirstTeam =
     relationType === EventTypes.RELATION_POSITIVE
-      ? `Team ${activeTeam.name} improved relations with ${otherTeam.name}.`
-      : `Team ${activeTeam.name} worsened relations with ${otherTeam.name}.`;
+      ? `Relations improved with ${otherTeam.name}.`
+      : `Relations worsened with ${otherTeam.name}.`;
   const descriptionSecondTeam =
     relationType === EventTypes.RELATION_POSITIVE
-      ? `Team ${otherTeam.name} improved relations with ${activeTeam.name}.`
-      : `Team ${otherTeam.name} worsened relations with ${activeTeam.name}.`;
+      ? `Relations improved with ${activeTeam.name}.`
+      : `Relations worsened with ${activeTeam.name}.`;
 
   // Create the relation event
   const eventFirstTeam: IEvent = {
@@ -140,11 +142,14 @@ function createTeamAttackEvent(
   otherTeam: ITeam,
   relationsMap: IRelation
 ): multiTeamEventFunctionsReturn {
-  // Create the attack event
+  // Changed descriptions
+  const descriptionFirstTeam = `Attacked members of the ${otherTeam.name} team!`;
+  const descriptionSecondTeam = `Attacked members of the ${activeTeam.name} team!`;
+
   const eventFirstTeam: IEvent = {
     type: EventTypes.ATTACK,
     teamId: activeTeam.id,
-    description: `Team ${activeTeam.name} attacked members of the ${otherTeam.name} team!`,
+    description: descriptionFirstTeam,
     involvedParties: [activeTeam.id, otherTeam.id],
     involvedPersons: [
       ...activeTeam.members.map(member => member.id),
@@ -155,7 +160,7 @@ function createTeamAttackEvent(
   const eventSecondTeam: IEvent = {
     type: EventTypes.ATTACK,
     teamId: otherTeam.id,
-    description: `Team ${otherTeam.name} attacked members of the ${otherTeam.name} team!`,
+    description: descriptionSecondTeam,
     involvedParties: [otherTeam.id, activeTeam.id],
     involvedPersons: [
       ...otherTeam.members.map(member => member.id),
@@ -185,20 +190,14 @@ export function isTeamInBlockingAction(
 ): boolean {
   if (!currentTurnEvents || currentTurnEvents.length === 0) return false;
 
-  // Check if the team already has an event in the current turn
-  const teamEvent = currentTurnEvents.find(event => event.teamId === teamId);
-  if (!teamEvent) return false;
-
-  // Check if the team is involved in any blocking action EXCEPT encounters
-  // This allows teams to have reciprocal encounters
-  const blockingActions = [
-    EventTypes.ENCOUNTER,
-    EventTypes.RELATION_POSITIVE,
-    EventTypes.RELATION_NEGATIVE,
-    EventTypes.ATTACK,
-  ];
-  return blockingActions.includes(teamEvent.type);
+  // Check if the team is involved in any event as *any* party
+  const teamInvolved = currentTurnEvents.some(event => 
+      event.involvedParties.includes(teamId)
+  );
+  
+  return teamInvolved;
 }
+
 /**
  * Determines if two teams can interact based on their encounter history
  */

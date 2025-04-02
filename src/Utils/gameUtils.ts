@@ -25,6 +25,8 @@ import {
 import { updateRelationsMap } from '../Redux/Slices/Game';
 import { IWeapon, WeaponType } from '../Types/Weapons';
 import { Dispatch } from '@reduxjs/toolkit';
+import { startFight } from '../Redux/fightSlice';
+import { getTeamFromId } from './teamsUtils';
 
 export function uuidv4(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -237,70 +239,84 @@ export function getAction(
   lastTurn: ITurn | null,
   currentTurn: ITurn,
   gameState: IGame,
-  dispatch: Dispatch,
-  i: number
+  dispatch: Dispatch
 ): IEvent | IEvent[] | null {
-  // Check if the team is already involved in a blocking action
   if (isTeamInBlockingAction(team.id, currentTurn.events)) {
     return null;
   }
-  const defaultEvent = {
+  
+  const defaultEvent: IEvent = {
     type: EventTypes.TRAVEL,
     teamId: team.id,
-    description: `Team ${team.name} traveled to a new location.`,
+    description: `Traveled to a new location.`,
     involvedParties: [team.id],
     involvedPersons: team.members.map(member => member.id),
     lootedWeapon: null,
   };
+
   if (lastTurn) {
     const tryMultiTeamEvent = Math.floor(Math.random() * 10);
     const teamLastTurnEvent = lastTurn.events.find(
       event => event.teamId === team.id
     );
+
     if (
-      tryMultiTeamEvent < 1 ||
+      tryMultiTeamEvent < 1 || 
       teamLastTurnEvent?.type === EventTypes.ENCOUNTER
     ) {
       try {
         const [firstTeamEvent, secondTeamEvent, newRelationsMap] =
           createMultiTeamEvent(team, lastTurn, currentTurn, gameState);
+        
         dispatch(updateRelationsMap(newRelationsMap));
+
+        if (firstTeamEvent.type === EventTypes.ATTACK) {
+            const secondTeamId = firstTeamEvent.involvedParties.find(id => id !== team.id);
+            if (secondTeamId) {
+                const secondTeam = getTeamFromId(secondTeamId, gameState);
+                if (secondTeam) {
+                    console.log(`Starting fight between ${team.name} and ${secondTeam.name}`);
+                    dispatch(startFight({ team1: team, team2: secondTeam }));
+                } else {
+                    console.error(`getAction: Could not find second team with ID ${secondTeamId} to start fight.`);
+                }
+            } else {
+                 console.error(`getAction: Attack event created by createMultiTeamEvent is missing opponent ID.`);
+            }
+        }
         return [firstTeamEvent, secondTeamEvent];
+
       } catch (error) {
-        console.log('error', error);
-        return defaultEvent;
+        // console.error('Error during createMultiTeamEvent:', error);
       }
     }
   }
 
-  // Create actions object with chances
   const actions = EventPossibilities;
-
-  // Calculate total chance
   const totalChance: number = Object.values(actions).reduce(
     (acc, { chance }) => acc + chance,
     0
   );
-
-  // Generate random action based on chances
   let randomNum = Math.floor(Math.random() * totalChance);
-  let selectedType = EventTypes.TRAVEL; // Default type
+  let selectedType = EventTypes.TRAVEL; 
   let event: IEvent | null = null;
   let lootedWeapon = null;
 
   for (const [type, { chance }] of Object.entries(actions)) {
     if (randomNum < chance) {
       selectedType = type as EventTypes;
-
-      // Generate event based on selected type
+      if (selectedType === EventTypes.ENCOUNTER) {
+          randomNum = Math.floor(Math.random() * totalChance);
+          continue; 
+      }
+      
       switch (selectedType) {
         case EventTypes.ATTACK:
           {
-            // Generic attack event (not against another team)
             event = {
               type: EventTypes.ATTACK,
               teamId: team.id,
-              description: `Team ${team.name} attacked enemies!`,
+              description: `Fought off some creatures of the labyrinth!`,
               involvedParties: [team.id],
               involvedPersons: team.members.map(member => member.id),
               lootedWeapon: null,
@@ -314,7 +330,7 @@ export function getAction(
           event = {
             type: EventTypes.LOOT,
             teamId: team.id,
-            description: `Team ${team.name} found a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForLoot.name} takes it.`,
+            description: `Found a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForLoot.name} takes it.`,
             involvedParties: [team.id],
             involvedPersons: team.members.map(member => member.id),
             lootedWeapon: lootedWeapon,
@@ -322,7 +338,7 @@ export function getAction(
           break;
 
         case EventTypes.KINGDOMDROP:
-          lootedWeapon = getRandomWeapon(true); // Pass true for kingdom drops
+          lootedWeapon = getRandomWeapon(true);
           const bestMemberForKingdom = getBestMemberForWeapon(
             team,
             lootedWeapon
@@ -330,7 +346,7 @@ export function getAction(
           event = {
             type: EventTypes.KINGDOMDROP,
             teamId: team.id,
-            description: `Team ${team.name} discovered a kingdom drop: a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForKingdom.name} takes it.`,
+            description: `Discovered a kingdom drop: a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForKingdom.name} takes it.`,
             involvedParties: [team.id],
             involvedPersons: team.members.map(member => member.id),
             lootedWeapon: lootedWeapon,
@@ -341,7 +357,7 @@ export function getAction(
           event = {
             type: EventTypes.TRAVEL,
             teamId: team.id,
-            description: `Team ${team.name} traveled to a new location.`,
+            description: `Traveled to a new location.`,
             involvedParties: [team.id],
             involvedPersons: team.members.map(member => member.id),
             lootedWeapon: null,
@@ -349,23 +365,15 @@ export function getAction(
           break;
 
         default:
-          event = defaultEvent;
+          event = defaultEvent; 
       }
       break;
     }
     randomNum -= chance;
   }
 
-  // If no event was created, default to travel
   if (!event) {
-    event = {
-      teamId: team.id,
-      type: EventTypes.TRAVEL,
-      description: `Team ${team.name} traveled to a new location.`,
-      involvedParties: [team.id],
-      involvedPersons: team.members.map(member => member.id),
-      lootedWeapon: null,
-    };
+    event = defaultEvent;
   }
 
   return event;
