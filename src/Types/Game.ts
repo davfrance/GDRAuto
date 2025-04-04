@@ -65,11 +65,13 @@ export interface ITurn {
 }
 
 export interface IGame {
-  teams: ITeam[];
   id: string;
+  teams: ITeam[];
+  defeatedTeams?: ITeam[];
   relations: IRelation;
   history: ITurn[];
   turn: ITurn;
+  prime?: number;
 }
 
 export interface IFightEvent {}

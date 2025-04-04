@@ -219,13 +219,13 @@ function Game() {
     <div className="flex flex-col p-4 md:p-6 bg-gray-900 text-gray-100 min-h-screen font-sans">
       {/* Header Section - remains the same */}
       <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
-        <h1 className="text-2xl md:text-3xl font-bold text-white">
+        <h1 className="text-2xl md:text-3xl font-bold text-myWhite">
           Game Runner
         </h1>
         <button
           onClick={nextTurn}
           disabled={isLoading || fightIsActive || gameState.teams.length === 0}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-myWhite font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
         >
           {isLoading ? 'Processing...' : `Turn: ${actualTurn} (Next)`}
         </button>

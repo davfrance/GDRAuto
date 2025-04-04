@@ -11,7 +11,7 @@ const MemberCard = ({ member }: UserCardProps) => {
   /*   const [open, setOpen] = useState(false); */
   const memberDetails = () => {
     return (
-      <div className="p-3 bg-white rounded-md shadow-lg border border-gray-200 w-64 text-black">
+      <div className="p-3 bg-myWhite rounded-md shadow-lg border border-gray-200 w-64 text-black">
         <div className="flex items-center gap-3 mb-2">
           <img
             src={member.image || member.class?.iconImageUrl || DEFAULT_AVATAR}
@@ -90,7 +90,7 @@ const MemberCard = ({ member }: UserCardProps) => {
         onClose={closePopup} */
     >
       <div
-        className="flex items-center bg-white px-2 py-1 rounded-full border shadow-sm hover:bg-gray-100 transition-colors cursor-pointer"
+        className="flex items-center bg-myWhite px-2 py-1 rounded-full border shadow-sm hover:bg-gray-100 transition-colors cursor-pointer"
         /* onClick={() => setOpen(true)} */
         aria-hidden="true"
       >

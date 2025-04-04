@@ -3,11 +3,11 @@ import { FormikProps, useFormik } from 'formik';
 import { useEffect, useState } from 'react';
 import { IGame, IUser } from '../../Types/Game';
 import { addClassStats, getDefaultStats, uuidv4 } from '../../Utils/gameUtils';
-import { Modal } from '@mui/material';
 import ClassSelectionModal from './ClassSelectionModal';
 import { IClasses, classes } from '../../Constants/classes';
 import { memberSchema } from '../../Validation/GameCreationSchema';
-import { DEFAULT_HP } from '../../Constants';
+import { DEFAULT_HP, DEFAULT_AVATAR } from '../../Constants';
+import Title from '../Titles/Title';
 
 export interface INewUser {
   formik: FormikProps<IGame>;
@@ -41,115 +41,202 @@ function NewUser({ formik, position, open, onClose }: INewUser) {
     validateOnMount: true,
     validateOnChange: true,
     onSubmit: (values, { resetForm }) => {
-      formik.setFieldValue(position, values);
+      if (values.stats.attack === 0 || values.hp === 0) {
+        const stats = getDefaultStats();
+        const hp = DEFAULT_HP;
+        if (values.class) {
+          const { newStats, newHP } = addClassStats(stats, hp, values.class);
+          formik.setFieldValue(position, {
+            ...values,
+            stats: newStats,
+            hp: newHP,
+          });
+        } else {
+          formik.setFieldValue(position, { ...values, stats: stats, hp: hp });
+        }
+      } else {
+        formik.setFieldValue(position, values);
+      }
       onClose();
       resetForm();
       formikNewUser.setFieldValue('id', uuidv4());
     },
   });
-  const { handleChange, values, handleSubmit } = formikNewUser;
+  const {
+    handleChange,
+    values,
+    handleSubmit,
+    errors,
+    touched,
+    isValid,
+    setFieldValue,
+  } = formikNewUser;
 
   useEffect(() => {
-    const newStats = {
-      mana: values.stats.mana,
-      attack: values.stats.attack,
-      magic: values.stats.magic,
-      stamina: values.stats.stamina,
-    };
-  }, [values.stats]);
-
-  const generateStats = () => {
-    const stats = getDefaultStats();
-    const hp = DEFAULT_HP;
-    // Add class stats to the generated stats
     if (values.class) {
+      const stats = getDefaultStats();
+      const hp = DEFAULT_HP;
       const { newStats, newHP } = addClassStats(stats, hp, values.class);
-      formikNewUser.setFieldValue('stats', newStats);
-      formikNewUser.setFieldValue('hp', newHP);
-      formikNewUser.validateForm();
+      setFieldValue('stats', newStats);
+      setFieldValue('hp', newHP);
+    } else {
+      setFieldValue('stats', getDefaultStats());
+      setFieldValue('hp', DEFAULT_HP);
     }
-  };
+    formikNewUser.validateForm();
+  }, [values.class, setFieldValue]);
 
   const handleClassSelectionModal = (className: keyof IClasses) => {
-    formikNewUser.setFieldValue('class', classes[className]);
+    setFieldValue('class', classes[className]);
     setOpenClassSelection(false);
   };
 
+  if (!open) return null;
+
   return (
-    <Modal open={open} className=" " onClose={onClose}>
-      <form
-        onSubmit={handleSubmit}
-        className="w-full h-full flex justify-center items-center"
-      >
-        <div className="flex flex-col gap-4 w-1/3 h-fit p-20 m-auto bg-myWhite rounded-lg">
-          <Input
-            label={'Name'}
-            onChange={handleChange}
-            name={`name`}
-            value={values.name}
-          ></Input>
-          <Input
-            label={'Image'}
-            onChange={handleChange}
-            name={`image`}
-            value={values.image}
-          ></Input>
-          <Input
-            label={'Gender'}
-            onChange={handleChange}
-            name={`gender`}
-            value={values.gender}
-          ></Input>
-          {!values.class ? (
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-800 text-myWhite p-6 rounded-lg shadow-xl w-full max-w-lg mx-4 flex flex-col gap-5 max-h-[90vh] overflow-y-auto"
+        >
+          <div className="flex justify-between items-center mb-1">
+            <Title>Add New Member</Title>
             <Button
-              onClick={() => {
-                setOpenClassSelection(true);
-              }}
+              {...({} as any)}
+              placeholder=""
+              variant="text"
+              color="gray"
+              onClick={onClose}
+              className="text-gray-400 hover:text-white p-1 -mr-2"
             >
-              Choose a class!
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
             </Button>
-          ) : values.stats.attack == 0 ? (
-            <Button onClick={generateStats}>Now find out your stats!</Button>
-          ) : (
-            <div>
-              <p>Class:{values.class.renderName}</p>
-              <p>
-                HP: {values.hp} ({values.class ? values.class.stats.hp : 0})
-              </p>
-              <p>
-                Mana: {values.stats.mana} (
-                {values.class ? values.class.stats.mana : 0})
-              </p>
-              <p>
-                Attack: {values.stats.attack} (
-                {values.class ? values.class.stats.attack : 0})
-              </p>
-              <p>
-                Magic: {values.stats.magic} (
-                {values.class ? values.class.stats.magic : 0})
-              </p>
-              <p>
-                Stamina: {values.stats.stamina} (
-                {values.class ? values.class.stats.stamina : 0})
-              </p>
-            </div>
+          </div>
+
+          <Input
+            {...({} as any)}
+            placeholder=""
+            label="Name"
+            name="name"
+            value={values.name}
+            onChange={handleChange}
+            color="blue"
+            className=" text-myWhite"
+            error={touched.name && !!errors.name}
+          />
+          {touched.name && errors.name && (
+            <p className="text-red-500 text-xs -mt-3 ml-1">{errors.name}</p>
           )}
+
+          <Input
+            {...({} as any)}
+            placeholder=""
+            label="Image URL (Optional)"
+            name="image"
+            value={values.image}
+            onChange={handleChange}
+            color="blue"
+            className=" text-myWhite"
+            error={touched.image && !!errors.image}
+          />
+
+          <Input
+            {...({} as any)}
+            placeholder=""
+            label="Gender"
+            name="gender"
+            value={values.gender}
+            onChange={handleChange}
+            color="blue"
+            className=" text-myWhite"
+            error={touched.gender && !!errors.gender}
+          />
+          {touched.gender && errors.gender && (
+            <p className="text-red-500 text-xs -mt-3 ml-1">{errors.gender}</p>
+          )}
+
+          <div className="bg-gray-700 p-4 rounded-md">
+            {!values.class ? (
+              <Button
+                {...({} as any)}
+                placeholder=""
+                onClick={() => setOpenClassSelection(true)}
+                color="teal"
+                fullWidth
+              >
+                Choose a Class
+              </Button>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={values.class.iconImageUrl || DEFAULT_AVATAR}
+                    alt={values.class.renderName}
+                    className="w-12 h-12 rounded-md border border-gray-500"
+                  />
+                  <div>
+                    <p className="font-semibold text-lg">
+                      {values.class.renderName}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      HP: {values.hp} | Mana: {values.stats.mana} | Atk:{' '}
+                      {values.stats.attack} | Mgc: {values.stats.magic} | Stm:{' '}
+                      {values.stats.stamina}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  {...({} as any)}
+                  placeholder=""
+                  onClick={() => setOpenClassSelection(true)}
+                  variant="outlined"
+                  size="sm"
+                  className="border-gray-500 text-gray-300 hover:bg-gray-600"
+                >
+                  Change
+                </Button>
+              </div>
+            )}
+            {touched.class &&
+              errors.class &&
+              typeof errors.class === 'string' && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.class}</p>
+              )}
+          </div>
+
           <Button
-            disabled={!formikNewUser.isValid || values.stats.attack == 0}
+            {...({} as any)}
+            placeholder=""
+            disabled={!isValid || !values.class}
             type="submit"
+            color="blue"
+            fullWidth
           >
-            Save
+            Save Member
           </Button>
-        </div>
+        </form>
+
         <ClassSelectionModal
           open={openClassSelection}
-          onClose={() => {
-            setOpenClassSelection(false);
-          }}
+          onClose={() => setOpenClassSelection(false)}
           handleClassSelection={handleClassSelectionModal}
         />
-      </form>
-    </Modal>
+      </div>
+    </>
   );
 }
 

@@ -19,7 +19,7 @@
 ## UI Improvements
 
 - [ ] Refactor RelationsTab component UI to match the overall page style
-- [ ] Refactor NewGame page UI to match the overall style
+- [x] Refactor NewGame page UI to match the overall style
 
 ## Team Management
 

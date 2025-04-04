@@ -91,7 +91,7 @@ export function generateRelationsMap(teams: ITeam[]): IRelation {
 export function getUserPrimeNumber(teams: ITeam[]): number {
   return PRIME_NUMBERS[teams.length];
 }
-function generateRandomUser(alreadyUsedNames: string[]): IUser {
+function generateRandomUser(alreadyUsedNames: string[], firstMember?: IUser): IUser {
   const user: IUser = {
     id: uuidv4(),
     name: '',
@@ -116,12 +116,22 @@ function generateRandomUser(alreadyUsedNames: string[]): IUser {
     }
   }
   const baseStats = getDefaultStats();
-  const userClass =
-    classes[
-      Object.keys(classes)[
-        Math.floor(Math.random() * Object.keys(classes).length)
-      ] as keyof IClasses
-    ];
+  let userClass =
+  classes[
+    Object.keys(classes)[
+      Math.floor(Math.random() * Object.keys(classes).length)
+    ] as keyof IClasses
+  ];
+  if (firstMember) {
+    while(userClass === firstMember.class) {
+      userClass = classes[
+        Object.keys(classes)[
+          Math.floor(Math.random() * Object.keys(classes).length)
+        ] as keyof IClasses
+      ];
+    }
+  }
+
   const { newStats, newHP } = addClassStats(baseStats, DEFAULT_HP, userClass);
   user.stats = newStats;
   user.hp = newHP;
@@ -137,7 +147,7 @@ export function generateMissingTeams(gameState: IGame | null): ITeam[] {
     const teamMembers: IUser[] = [];
     const firstMember = generateRandomUser(usedNames);
     usedNames.push(firstMember.name);
-    const secondMember = generateRandomUser(usedNames);
+    const secondMember = generateRandomUser(usedNames, firstMember);
     teamMembers.push(firstMember, secondMember);
     let teamName = '';
     while (teamName === '') {
