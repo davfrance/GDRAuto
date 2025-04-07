@@ -14,7 +14,7 @@ const WeaponCard = ({ weapon }: WeaponCardProps) => {
       case 'Rare':
         return 'text-blue-600';
       case 'Epic':
-        return 'text-purple-600';
+        return 'text-[#8372D2]';
       case 'Legendary':
         return 'text-orange-600';
       default:

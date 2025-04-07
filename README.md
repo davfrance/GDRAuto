@@ -25,7 +25,7 @@ Link: [https://auto-gdr-zb5udbt5nq-ey.a.run.app/](https://gdr-auto.vercel.app/)
 
 ## UI Improvements
 
-- [ ] Refactor RelationsTab component UI to match the overall page style
+- [x] Refactor RelationsTab component UI to match the overall page style
 - [x] Refactor NewGame page UI to match the overall style
 
 ## Team Management

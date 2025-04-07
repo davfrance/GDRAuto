@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import WeaponCard from '../../Components/Weapons/WeaponCard';
 import RelationsTab from '../../Components/GamePageTabs/RelationsTab';
 import FightScene from '../../Components/Fight/FightScene';
+import TeamDetails from '../../Components/TeamDetails/TeamDetails';
+import InfoModal from '../../Components/Modals/InfoModal';
 import _ from 'lodash';
 
 // Helper function to render text with highlighted team names
@@ -54,9 +56,8 @@ const renderHighlightedText = (
 function Game() {
   const [actualTurn, setActualTurn] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedTeamPrime, setSelectedTeamPrime] = useState<number | null>(
-    null
-  );
+  const [teamToShowDetails, setTeamToShowDetails] = useState<ITeam | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -215,9 +216,27 @@ function Game() {
       ? gameState.history[gameState.history.length - 1].events
       : [];
 
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+  };
+
+  const handleOpenDetailsModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleTeamSelect = (team: ITeam) => {
+    if (teamToShowDetails?.id === team.id) {
+      setTeamToShowDetails(null);
+      setIsDetailsModalOpen(false);
+    } else {
+      setTeamToShowDetails(team);
+      setIsDetailsModalOpen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col p-4 md:p-6 bg-gray-900 text-gray-100 min-h-screen font-sans">
-      {/* Header Section - remains the same */}
       <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-3">
         <h1 className="text-2xl md:text-3xl font-bold text-myWhite">
           Game Runner
@@ -235,114 +254,110 @@ function Game() {
 
       {!fightIsActive && (
         <div className="flex-grow flex flex-col md:flex-row gap-4">
-          {/* Left Sidebar: Teams & Relations - remains the same */}
           <div className="w-full md:w-1/4 flex flex-col gap-4">
             <div className="bg-gray-800 p-3 rounded-lg shadow">
               <h3 className="text-lg font-semibold mb-2 text-center border-b border-gray-700 pb-1 text-gray-200">
                 Teams
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
                 {allTeamsForDisplay.map(team => {
                   const isDefeated = gameState.defeatedTeams.some(
                     defeatedTeam => defeatedTeam.id === team.id
                   );
+                  const isSelected = teamToShowDetails?.id === team.id;
                   return (
                     <div
-                      key={team.prime}
-                      className={`p-2 rounded shadow-sm cursor-pointer ${
-                        selectedTeamPrime === team.prime
-                          ? 'ring-1 ring-blue-400'
-                          : ''
-                      } ${
+                      key={team.id}
+                      onClick={() => handleTeamSelect(team)}
+                      className={`p-3 rounded-md transition-colors cursor-pointer flex justify-between items-center ${
                         isDefeated
-                          ? 'border border-red-500 opacity-60 bg-gray-600'
-                          : 'bg-gray-700 hover:bg-gray-600'
+                          ? 'bg-red-900/50 border border-red-700 opacity-60 hover:opacity-80'
+                          : isSelected
+                            ? 'bg-blue-900 border border-blue-500'
+                            : 'bg-gray-700 hover:bg-gray-600'
                       }`}
-                      onClick={() => setSelectedTeamPrime(team.prime)}
-                      title={isDefeated ? `${team.name} (Defeated)` : team.name}
                     >
-                      <h4
-                        className={`text-base font-semibold text-center ${
-                          isDefeated ? 'text-red-300 line-through' : 'text-gray-100'
-                        }`}
-                      >
+                      <span className={`font-semibold truncate ${isDefeated ? 'text-red-300 line-through' : 'text-white'}`}>
                         {team.name}
-                      </h4>
+                      </span>
+                      {isSelected && !isDefeated && (
+                        <button
+                          onClick={handleOpenDetailsModal}
+                          className="text-xs text-gray-200 hover:text-blue-900 ml-2 px-2 py-0.5 rounded bg-transparent hover:bg-gray-200 transition-colors flex-shrink-0 font-bold"
+                          title="View Details"
+                        >
+                          Details
+                        </button>
+                      )}
                     </div>
                   );
                 })}
+                {allTeamsForDisplay.length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">No teams available.</p>
+                )}
               </div>
             </div>
 
-            {selectedTeamPrime && (
+            {teamToShowDetails && (
               <div className="bg-gray-800 p-3 rounded-lg shadow">
                 <RelationsTab
-                  teams={gameState.teams}
-                  relations={gameState.relations}
-                  selectedTeamPrime={selectedTeamPrime}
+                  selectedTeamPrime={teamToShowDetails.prime}
+                  relations={gameState.relations || {}}
+                  teams={allTeamsForDisplay}
                 />
               </div>
             )}
           </div>
 
-          {/* Right Main Area: Event Log - Updated Rendering Loop */}
-          <div className="w-full md:w-3/4 bg-gray-800 p-3 md:p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-3 border-b border-gray-700 pb-2 text-gray-200">
-              Turn Events Log
-            </h2>
-            {lastTurnEvents.length > 0 ? (
-              <div className="space-y-3">
-                {lastTurnEvents.map((event, index) => {
-                  // Determine the primary team to display for this event
+          <div className="w-full md:w-3/4 bg-gray-800 p-4 rounded-lg shadow overflow-hidden">
+            <h3 className="text-lg font-semibold mb-3 text-gray-200 border-b border-gray-700 pb-2">
+              Event Log (Turn {actualTurn})
+            </h3>
+            <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-200px)] pr-2">
+              {lastTurnEvents.length > 0 ? (
+                lastTurnEvents.map((event, index) => {
                   const primaryTeam = allTeamsForDisplay.find(t => t.id === event.teamId);
-                  // Fallback if primary team not found (e.g., event generated by interaction?)
-                  const fallbackTeam = allTeamsForDisplay.find(t => t.id === event.involvedParties[0]);
-                  const displayTeam = primaryTeam || fallbackTeam;
-
-                  const memberLoot = getMemberWithLootedWeapon(event, displayTeam);
-
-                  const highlightedDescription = renderHighlightedText(
-                    event.description,
-                    allTeamsForDisplay,
-                    displayTeam?.id
-                  );
+                  const memberWithWeapon = getMemberWithLootedWeapon(event, primaryTeam);
+                  const bgColor = event.type === EventTypes.ATTACK ? 'bg-red-800/30' : 'bg-gray-700/50';
 
                   return (
-                    <div
-                      key={`${event.teamId}-${event.timestamp}-${index}`}
-                      className="text-base p-3 bg-gray-700 rounded shadow border-b border-gray-600 last:border-b-0"
-                    >
-                      <strong
-                        className="text-yellow-300 font-semibold cursor-pointer hover:underline"
-                        onClick={() => displayTeam && setSelectedTeamPrime(displayTeam.prime)}
-                      >
-                        {displayTeam?.name || 'Event'}:
-                      </strong>
-
-                      <span className="text-gray-200">
-                        {' '}{highlightedDescription}
-                      </span>
-
-                      {memberLoot && event.action.lootedWeapon && (
-                        <div className="ml-4 mt-1 pl-2 border-l border-gray-600">
-                          <p className="text-xs italic text-gray-400">
-                            {memberLoot.name} received:
-                          </p>
+                    <div key={index} className={`p-3 rounded-md ${bgColor}`}>
+                      <p className="text-sm text-gray-300">
+                        <span className={`font-semibold ${primaryTeam ? 'text-white' : 'text-gray-400'}`}>
+                          {primaryTeam ? primaryTeam.name : 'Unknown Team'}
+                        </span>:{' '}
+                        {renderHighlightedText(event.description, allTeamsForDisplay, primaryTeam?.id)}
+                      </p>
+                      {memberWithWeapon && event.action?.lootedWeapon && (
+                        <div className="mt-2 pl-4 border-l-2 border-blue-500">
                           <WeaponCard weapon={event.action.lootedWeapon} />
                         </div>
                       )}
                     </div>
                   );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-400 italic">
-                No events yet for this turn. Click 'Next Turn' to start.
-              </p>
-            )}
+                })
+              ) : (
+                <p className="text-center text-gray-500 py-6">
+                  {actualTurn === 0 ? 'Click Next Turn to begin.' : 'No significant events this turn.'}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
+
+      <InfoModal
+        open={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        title={teamToShowDetails ? `${teamToShowDetails.name} - Details` : 'Team Details'}
+      >
+        {teamToShowDetails && (
+          <TeamDetails
+            team={teamToShowDetails}
+            onClose={handleCloseDetailsModal}
+          />
+        )}
+      </InfoModal>
     </div>
   );
 }

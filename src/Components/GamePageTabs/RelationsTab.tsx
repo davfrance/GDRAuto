@@ -5,46 +5,67 @@ interface RelationsTabProps {
   relations: Record<number, number>;
   teams: ITeam[];
 }
+
 export default function RelationsTab({
   selectedTeamPrime,
   relations,
   teams,
 }: RelationsTabProps) {
-  const getRelationColor = (value: number) => {
-    if (value < 33) return 'text-red-600';
-    if (value < 66) return 'text-yellow-600';
-    return 'text-green-600';
-  };
-  return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold mb-4">Team Relationships</h3>
-      {Object.keys(relations).map(key => {
-        if (!selectedTeamPrime) return null;
-        console.log(selectedTeamPrime);
-        const remainder = Number.parseInt(key) % selectedTeamPrime;
-        console.log('remainder', remainder);
-        if (remainder !== 0) return null;
 
-        const otherTeam = teams.find(
-          team => team.prime === Number.parseInt(key) / selectedTeamPrime
-        );
-        console.log('otherTeam', otherTeam);
-        if (!otherTeam) {
-          return <></>;
-        }
-        return (
-          <div key={key} className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">{otherTeam.name}</span>
-              <span
-                className={getRelationColor(relations[Number.parseInt(key)])}
-              >
-                {relations[Number.parseInt(key)]}%
-              </span>
-            </div>
-          </div>
-        );
-      })}
+  // Update relation colors for better contrast on dark background
+  const getRelationColor = (value: number) => {
+    if (value < 33) return 'text-red-400';     // Brighter red
+    if (value < 66) return 'text-yellow-400';  // Brighter yellow
+    return 'text-green-400';   // Brighter green
+  };
+
+  // Filter related teams first for cleaner rendering
+  const relatedTeamsData = Object.keys(relations)
+    .map(key => {
+      if (!selectedTeamPrime || (Number.parseInt(key) % selectedTeamPrime) !== 0) {
+        return null;
+      }
+      const otherTeamPrime = Number.parseInt(key) / selectedTeamPrime;
+      const otherTeam = teams.find(team => team.prime === otherTeamPrime);
+      if (!otherTeam) {
+        return null;
+      }
+      return {
+        key,
+        otherTeam,
+        relationValue: relations[Number.parseInt(key)],
+      };
+    })
+    .filter(Boolean); // Remove null entries
+
+  return (
+    <div className="space-y-3"> {/* Reduced spacing slightly */}
+      {/* Update header text color */}
+      <h3 className="text-lg font-semibold mb-2 text-gray-200 border-b border-gray-700 pb-1">
+        Relationships
+      </h3>
+      {relatedTeamsData.length > 0 ? (
+        relatedTeamsData.map(data => {
+            if (!data) return null; // Type guard
+            const { key, otherTeam, relationValue } = data;
+            return (
+              // Update relation item background and text color
+              <div key={key} className="bg-gray-700 p-3 rounded-md shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-200">{otherTeam.name}</span>
+                  <span className={`font-semibold ${getRelationColor(relationValue)}`}>
+                    {relationValue}%
+                  </span>
+                </div>
+              </div>
+            );
+        })
+      ) : (
+        // Add a message when no relations are displayed
+        <p className="text-sm text-gray-500 text-center py-4">
+          No relationship data available for the selected team.
+        </p>
+      )}
     </div>
   );
 }
