@@ -16,6 +16,7 @@ import {
   ITeam,
   ITurn,
   IUser,
+  IDescriptionSegment,
 } from '../Types/Game';
 import {
   createMultiTeamEvent,
@@ -258,7 +259,7 @@ export function getAction(
   const defaultEvent: IEvent = {
     type: EventTypes.TRAVEL,
     teamId: team.id,
-    description: `Traveled to a new location.`,
+    description: [{ type: 'text', value: 'Traveled to a new location.' }],
     involvedParties: [team.id],
     involvedPersons: team.members.map(member => member.id),
     lootedWeapon: null,
@@ -326,7 +327,9 @@ export function getAction(
             event = {
               type: EventTypes.ATTACK,
               teamId: team.id,
-              description: `Fought off some creatures of the labyrinth!`,
+              description: [
+                { type: 'text', value: 'Fought off some creatures of the labyrinth!' },
+              ],
               involvedParties: [team.id],
               involvedPersons: team.members.map(member => member.id),
               lootedWeapon: null,
@@ -340,7 +343,11 @@ export function getAction(
           event = {
             type: EventTypes.LOOT,
             teamId: team.id,
-            description: `Found a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForLoot.name} takes it.`,
+            description: [
+              { type: 'text', value: `Found a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ` },
+              { type: 'user', value: bestMemberForLoot.name, id: bestMemberForLoot.id },
+              { type: 'text', value: ' takes it.' },
+            ],
             involvedParties: [team.id],
             involvedPersons: team.members.map(member => member.id),
             lootedWeapon: lootedWeapon,
@@ -356,7 +363,11 @@ export function getAction(
           event = {
             type: EventTypes.KINGDOMDROP,
             teamId: team.id,
-            description: `Discovered a kingdom drop: a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ${bestMemberForKingdom.name} takes it.`,
+            description: [
+              { type: 'text', value: `Discovered a kingdom drop: a ${lootedWeapon.rarity} ${lootedWeapon.type}: ${lootedWeapon.name}! ` },
+              { type: 'user', value: bestMemberForKingdom.name, id: bestMemberForKingdom.id },
+              { type: 'text', value: ' takes it.' },
+            ],
             involvedParties: [team.id],
             involvedPersons: team.members.map(member => member.id),
             lootedWeapon: lootedWeapon,
@@ -367,7 +378,9 @@ export function getAction(
           event = {
             type: EventTypes.TRAVEL,
             teamId: team.id,
-            description: `Traveled to a new location.`,
+            description: [
+              { type: 'text', value: 'Traveled to a new location.' },
+            ],
             involvedParties: [team.id],
             involvedPersons: team.members.map(member => member.id),
             lootedWeapon: null,

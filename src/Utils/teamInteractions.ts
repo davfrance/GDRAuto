@@ -7,6 +7,8 @@ import {
   ITeam,
   ITurn,
   ITurnEvent,
+  IUser,
+  IDescriptionSegment,
 } from '../Types/Game';
 import { getTeamFromId } from './teamsUtils';
 
@@ -48,14 +50,22 @@ function createTeamEncounter(
   firstTeam: ITeam,
   secondTeam: ITeam
 ): [IEvent, IEvent] {
-  // Changed description
-  const descriptionFirstTeam = `Encountered members of the ${secondTeam.name} team.`;
-  const descriptionSecondTeam = `Encountered members of the ${firstTeam.name} team.`;
+  // Changed description generation
+  const descriptionFirstTeam: IDescriptionSegment[] = [
+    { type: 'text', value: 'Encountered members of the ' },
+    { type: 'team', value: secondTeam.name, id: secondTeam.id },
+    { type: 'text', value: ' team.' },
+  ];
+  const descriptionSecondTeam: IDescriptionSegment[] = [
+    { type: 'text', value: 'Encountered members of the ' },
+    { type: 'team', value: firstTeam.name, id: firstTeam.id },
+    { type: 'text', value: ' team.' },
+  ];
 
   const eventFirstTeam: IEvent = {
     type: EventTypes.ENCOUNTER,
     teamId: firstTeam.id,
-    description: descriptionFirstTeam,
+    description: descriptionFirstTeam, // Use segmented description
     involvedParties: [firstTeam.id, secondTeam.id],
     involvedPersons: [
       ...firstTeam.members.map(member => member.id),
@@ -66,7 +76,7 @@ function createTeamEncounter(
   const eventSecondTeam: IEvent = {
     type: EventTypes.ENCOUNTER,
     teamId: secondTeam.id,
-    description: descriptionSecondTeam,
+    description: descriptionSecondTeam, // Use segmented description
     involvedParties: [secondTeam.id, firstTeam.id],
     involvedPersons: [
       ...secondTeam.members.map(member => member.id),
@@ -86,21 +96,37 @@ function createTeamRelationEvent(
   relationType: EventTypes.RELATION_POSITIVE | EventTypes.RELATION_NEGATIVE,
   relationsMap: IRelation
 ): multiTeamEventFunctionsReturn {
-  // Changed descriptions
-  const descriptionFirstTeam =
+  // Changed descriptions generation
+  const descriptionFirstTeam: IDescriptionSegment[] =
     relationType === EventTypes.RELATION_POSITIVE
-      ? `Relations improved with ${otherTeam.name}.`
-      : `Relations worsened with ${otherTeam.name}.`;
-  const descriptionSecondTeam =
+      ? [
+          { type: 'text', value: 'Relations improved with ' },
+          { type: 'team', value: otherTeam.name, id: otherTeam.id },
+          { type: 'text', value: '.' },
+        ]
+      : [
+          { type: 'text', value: 'Relations worsened with ' },
+          { type: 'team', value: otherTeam.name, id: otherTeam.id },
+          { type: 'text', value: '.' },
+        ];
+  const descriptionSecondTeam: IDescriptionSegment[] =
     relationType === EventTypes.RELATION_POSITIVE
-      ? `Relations improved with ${activeTeam.name}.`
-      : `Relations worsened with ${activeTeam.name}.`;
+      ? [
+          { type: 'text', value: 'Relations improved with ' },
+          { type: 'team', value: activeTeam.name, id: activeTeam.id },
+          { type: 'text', value: '.' },
+        ]
+      : [
+          { type: 'text', value: 'Relations worsened with ' },
+          { type: 'team', value: activeTeam.name, id: activeTeam.id },
+          { type: 'text', value: '.' },
+        ];
 
   // Create the relation event
   const eventFirstTeam: IEvent = {
     type: relationType,
     teamId: activeTeam.id,
-    description: descriptionFirstTeam,
+    description: descriptionFirstTeam, // Use segmented description
     involvedParties: [activeTeam.id, otherTeam.id],
     involvedPersons: [
       ...activeTeam.members.map(member => member.id),
@@ -111,7 +137,7 @@ function createTeamRelationEvent(
   const eventSecondTeam: IEvent = {
     type: relationType,
     teamId: otherTeam.id,
-    description: descriptionSecondTeam,
+    description: descriptionSecondTeam, // Use segmented description
     involvedParties: [activeTeam.id, otherTeam.id],
     involvedPersons: [
       ...otherTeam.members.map(member => member.id),
@@ -142,14 +168,22 @@ function createTeamAttackEvent(
   otherTeam: ITeam,
   relationsMap: IRelation
 ): multiTeamEventFunctionsReturn {
-  // Changed descriptions
-  const descriptionFirstTeam = `Attacked members of the ${otherTeam.name} team!`;
-  const descriptionSecondTeam = `Attacked members of the ${activeTeam.name} team!`;
+  // Changed descriptions generation
+  const descriptionFirstTeam: IDescriptionSegment[] = [
+    { type: 'text', value: 'Attacked members of the ' },
+    { type: 'team', value: otherTeam.name, id: otherTeam.id },
+    { type: 'text', value: ' team!' },
+  ];
+  const descriptionSecondTeam: IDescriptionSegment[] = [
+    { type: 'text', value: 'Attacked members of the ' },
+    { type: 'team', value: activeTeam.name, id: activeTeam.id },
+    { type: 'text', value: ' team!' },
+  ];
 
   const eventFirstTeam: IEvent = {
     type: EventTypes.ATTACK,
     teamId: activeTeam.id,
-    description: descriptionFirstTeam,
+    description: descriptionFirstTeam, // Use segmented description
     involvedParties: [activeTeam.id, otherTeam.id],
     involvedPersons: [
       ...activeTeam.members.map(member => member.id),
@@ -160,7 +194,7 @@ function createTeamAttackEvent(
   const eventSecondTeam: IEvent = {
     type: EventTypes.ATTACK,
     teamId: otherTeam.id,
-    description: descriptionSecondTeam,
+    description: descriptionSecondTeam, // Use segmented description
     involvedParties: [otherTeam.id, activeTeam.id],
     involvedPersons: [
       ...otherTeam.members.map(member => member.id),

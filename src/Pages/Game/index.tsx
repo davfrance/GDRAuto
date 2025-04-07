@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../Redux/store';
-import { EventTypes, ITeam, ITurn, ITurnEvent, IUser } from '../../Types/Game';
+import {
+  EventTypes,
+  ITeam,
+  ITurn,
+  ITurnEvent,
+  IUser,
+} from '../../Types/Game';
 import { GameState } from '../../Redux/Slices/Game';
 import { getAction } from '../../Utils/gameUtils';
 import { addTurn, saveTeam } from '../../Redux/Slices/Game';
@@ -12,46 +18,7 @@ import FightScene from '../../Components/Fight/FightScene';
 import TeamDetails from '../../Components/TeamDetails/TeamDetails';
 import InfoModal from '../../Components/Modals/InfoModal';
 import _ from 'lodash';
-
-// Helper function to render text with highlighted team names
-const renderHighlightedText = (
-  text: string,
-  allTeams: ITeam[],
-  primaryTeamId?: string
-): React.ReactNode[] => {
-  if (!text) return [''];
-
-  // Teams to potentially highlight (exclude the primary team for this event)
-  const teamsToHighlight = allTeams.filter(team => team.id !== primaryTeamId);
-  if (teamsToHighlight.length === 0) return [text]; // No other teams to highlight
-
-  // Create a regex pattern to match any of the other team names as whole words
-  // Escape special regex characters in names just in case
-  const teamNamesPattern = teamsToHighlight
-    .map(team => team.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')) // Escape regex chars
-    .join('|'); // Join with OR operator
-
-  // Use capturing group to keep the matched names in the split array
-  const regex = new RegExp(`\\b(${teamNamesPattern})\\b`, 'g');
-  const parts = text
-    .split(regex)
-    .filter(part => part !== undefined && part !== ''); // Split and filter empty strings
-
-  return parts.map((part, index) => {
-    // Check if this part is one of the highlighted team names
-    const isTeamName = teamsToHighlight.some(team => team.name === part);
-    if (isTeamName) {
-      return (
-        // Apply styling for highlighted team names
-        <span key={index} className="text-blue-300 font-semibold cursor-pointer hover:underline">
-          {part}
-        </span>
-      );
-    } else {
-      return part; // Return plain text part
-    }
-  });
-};
+import { renderSegmentedDescription } from '../../Utils/renderingUtils.tsx';
 
 function Game() {
   const [actualTurn, setActualTurn] = useState(0);
@@ -118,7 +85,7 @@ function Game() {
         teamAction.forEach(event => {
           const isAlreadyAdded = currentTurn.events.some(
             e =>
-              e.description === event.description &&
+              _.isEqual(e.description, event.description) &&
               _.isEqual(e.involvedParties.sort(), event.involvedParties.sort())
           );
           if (!isAlreadyAdded) {
@@ -153,9 +120,15 @@ function Game() {
           teamAction.type === EventTypes.KINGDOMDROP;
         const currentTeamState = gameState.teams.find(t => t.id === team.id);
         if (isLootEvent && teamAction.lootedWeapon && currentTeamState) {
-          const bestMember = currentTeamState.members.find(m =>
-            teamAction.description.includes(m.name)
-          );
+          const lootReceiverSegment = teamAction.description.find(seg => seg.type === 'user');
+          let bestMember = null;
+          if (lootReceiverSegment?.id) {
+            bestMember = currentTeamState.members.find(m => m.id === lootReceiverSegment.id);
+          }
+          if (!bestMember && lootReceiverSegment) {
+             bestMember = currentTeamState.members.find(m => m.name === lootReceiverSegment.value);
+          }
+
           if (bestMember) {
             const updatedMembers: IUser[] = currentTeamState.members.map(m =>
               m.id === bestMember.id
@@ -198,14 +171,25 @@ function Game() {
       event.type === EventTypes.LOOT ||
       event.type === EventTypes.KINGDOMDROP
     ) {
-      const lootReceiverId = event.involvedPersons.find(pId =>
+      // Attempt to find the member explicitly mentioned as the loot receiver
+      const lootReceiverSegment = event.description.find(seg => seg.type === 'user');
+      if (lootReceiverSegment?.id) {
+        const receiver = team.members.find(m => m.id === lootReceiverSegment.id);
+        if (receiver) return receiver;
+      }
+
+      // Fallback: If not found via specific segment ID, check involvedPersons (though less reliable now)
+      const lootReceiverIdFromInvolved = event.involvedPersons.find(pId =>
         team.members.some(m => m.id === pId)
       );
-      if (lootReceiverId) {
-        return team.members.find(m => m.id === lootReceiverId);
+      if (lootReceiverIdFromInvolved) {
+        return team.members.find(m => m.id === lootReceiverIdFromInvolved);
       }
+
+      // Final Fallback (less ideal): Find member whose name appears in any 'user' segment value
+      // This is kept just in case the ID wasn't set correctly during event generation
       return team.members.find(member =>
-        event.description.includes(member.name)
+        event.description.some(segment => segment.type === 'user' && segment.value === member.name)
       );
     }
     return null;
@@ -326,7 +310,7 @@ function Game() {
                         <span className={`font-semibold ${primaryTeam ? 'text-white' : 'text-gray-400'}`}>
                           {primaryTeam ? primaryTeam.name : 'Unknown Team'}
                         </span>:{' '}
-                        {renderHighlightedText(event.description, allTeamsForDisplay, primaryTeam?.id)}
+                        {renderSegmentedDescription(event.description, allTeamsForDisplay)}
                       </p>
                       {memberWithWeapon && event.action?.lootedWeapon && (
                         <div className="mt-2 pl-4 border-l-2 border-blue-500">

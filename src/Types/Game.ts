@@ -40,10 +40,19 @@ export enum EventTypes {
   RELATION_POSITIVE = 'Positive relation',
   RELATION_NEGATIVE = 'Negative relation',
 }
+
+// New types for structured descriptions
+export type DescriptionSegmentType = 'text' | 'team' | 'user';
+export interface IDescriptionSegment {
+  type: DescriptionSegmentType;
+  value: string;
+  id?: string; // Optional ID for teams or users for potential interactions
+}
+
 export interface IEvent {
   type: EventTypes;
   teamId: string;
-  description: string;
+  description: IDescriptionSegment[]; // Changed from string
   involvedParties: string[];
   involvedPersons: string[];
   lootedWeapon?: IWeapon | null;
@@ -54,7 +63,7 @@ export interface ITurnEvent {
   action: IEvent;
   timestamp: string;
   type: EventTypes;
-  description: string;
+  description: IDescriptionSegment[]; // Changed from string
   involvedParties: string[];
   involvedPersons: string[];
 }

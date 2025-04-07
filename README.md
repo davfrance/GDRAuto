@@ -9,8 +9,8 @@ Link: [https://auto-gdr-zb5udbt5nq-ey.a.run.app/](https://gdr-auto.vercel.app/)
 
 ## User and Team Cards
 
-- [ ] Improve/Redesign User and Team Cards UI
-- [ ] Highlight specific user names within event descriptions (similar to team highlighting)
+- [x] Improve/Redesign User and Team Cards UI
+- [x] Highlight specific user names within event descriptions (similar to team highlighting)
 
 ## Weapon Logic
 
@@ -22,6 +22,7 @@ Link: [https://auto-gdr-zb5udbt5nq-ey.a.run.app/](https://gdr-auto.vercel.app/)
 - [ ] Overhaul/Fix the Fight Scene UI layout and styling
 - [ ] Test and fix potential issues with multiple fights occurring in a single turn
 - [ ] Improve fight pacing and AI turn logic (currently too fast/simple)
+- [ ] Fights against mobs should lower HPs 
 
 ## UI Improvements
 
